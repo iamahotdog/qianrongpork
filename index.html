@@ -154,13 +154,13 @@ button{cursor:pointer}
   <main class="wrap">
     <section class="welcome">
       <div class="eyebrow">來自屏東東港的好豬肉</div>
-      <h1>歡迎參加千容肉品首次團購</h1>
-      <p>我們用心挑選來自屏東的新鮮豬肉，每日新鮮分切、冷凍配送，希望把安心又美味的豬肉送到您的餐桌。</p>
+      <h1>千容肉品首次團購開跑</h1>
+      <p>來自屏東東港的新鮮豬肉，每日新鮮分切並以冷凍方式配送，希望把安心、好吃的豬肉送到您的餐桌。</p>
     </section>
     <section class="panel">
       <div class="guide-grid">
         <div class="guide-card"><h3>團購流程</h3><img src="assets/flow.png" alt="團購流程"></div>
-        <div class="guide-card"><h3>加入官方LINE</h3><a href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener"><img src="assets/line.png" alt="加入官方LINE"></a></div>
+        <div class="guide-card"><h3>點擊加入官方LINE好友</h3><a href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener"><img src="assets/line.png" alt="加入官方LINE"></a></div>
       </div>
       <div class="next-wrap"><button class="primary" onclick="goPage('pageShop')">下一步：開始選購</button></div>
     </section>
@@ -214,25 +214,25 @@ button{cursor:pointer}
 
         <div class="payment-box">
           <h3>匯款資訊</h3>
-          <div class="payment-grid">
-            <span>銀行（分行）</span><strong>中國信託長春分局</strong>
-            <span>帳戶</span><strong>123-456-789</strong>
-            <span>帳戶姓名</span><strong>熱狗</strong>
+          <div class="payment-lines">
+            <p><span>銀行（分行）：</span><strong>中國信託長春分局 822190</strong></p>
+            <p><span>帳戶：</span><strong>123-456-789</strong></p>
+            <p><span>帳戶姓名：</span><strong>熱狗</strong></p>
           </div>
         </div>
 
         <div class="line-reminder">
           完成匯款後，請務必加入
           <a href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">千容肉品官方LINE</a>，
-          並提供匯款後五碼，以利對帳與確認訂單。
+          以利後續對帳、確認訂單及聯繫。
         </div>
       </section>
 
       <section class="form-card">
         <h2>訂購人／收件資料</h2>
         <div class="fields">
-          <div class="field"><label>訂購人姓名</label><input id="buyerName" placeholder="請輸入姓名"></div>
-          <div class="field"><label>聯絡電話</label><input id="phone" inputmode="tel" placeholder="09xxxxxxxx"></div>
+          <div class="field"><label>訂購人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="buyerName" required autocomplete="name" placeholder="請輸入姓名"></div>
+          <div class="field"><label>聯絡電話 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="09[0-9]{8}" required placeholder="請輸入09開頭的10碼手機號碼"></div>
           <div class="field full"><label>配送方式</label>
             <select id="shipping" onchange="updateCheckout()">
               <option value="290">黑貓冷凍宅急便（290元）</option>
@@ -240,9 +240,9 @@ button{cursor:pointer}
               <option value="0">臺北市面交（免運）</option>
             </select>
           </div>
-          <div class="field"><label>收件人姓名</label><input id="receiverName" placeholder="若同訂購人可填相同姓名"></div>
-          <div class="field"><label>匯款帳號後五碼</label><input id="last5" inputmode="numeric" maxlength="5" placeholder="付款後填寫"></div>
-          <div class="field full"><label>收件地址</label><textarea id="address" placeholder="請填寫完整地址；面交可填方便聯繫的地點"></textarea></div>
+          <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="若同訂購人可填相同姓名"></div>
+          <div class="field"><label>匯款帳號後五碼 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="last5" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required placeholder="請輸入5碼數字"></div>
+          <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交可填方便聯繫的地點"></textarea></div>
           <div class="field full"><label>備註</label><textarea id="note" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
         </div>
         <div class="checkout-actions">
@@ -330,6 +330,20 @@ function submitOrder(){
     const el=document.getElementById(id);
     if(!el.value.trim()){alert(msg);el.focus();return}
   }
+
+  const phone=document.getElementById('phone');
+  if(!/^09\d{8}$/.test(phone.value)){
+    alert('聯絡電話請輸入09開頭的10碼手機號碼。');
+    phone.focus();
+    return;
+  }
+
+  const last5=document.getElementById('last5');
+  if(!/^\d{5}$/.test(last5.value)){
+    alert('匯款帳號後五碼請輸入5碼數字。');
+    last5.focus();
+    return;
+  }
   const items=products.filter(p=>p.qty>0).map(p=>`${p.name}：${p.qty}包`).join('、');
   const goods=goodsTotal(), ship=shippingFee(), total=goods+ship;
   const shipText=document.getElementById('shipping').selectedOptions[0].text;
@@ -348,12 +362,23 @@ function submitOrder(){
 備註：${document.getElementById('note').value||'無'}`;
   const done=document.getElementById('done');
   done.style.display='block';
-  done.innerHTML='<strong>訂單內容已整理完成。</strong><br>請先複製訂單內容，再點擊下方按鈕加入官方LINE並傳送訂單，以利對帳與確認。<br><br><button class="primary" onclick="copyOrder()">複製訂單內容</button> <a class="secondary" style="display:inline-block;text-decoration:none;margin-left:8px" href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">加入官方LINE</a>';
+  done.innerHTML='<strong>訂單內容已整理完成。</strong><br>請先複製訂單內容，再點擊下方按鈕加入官方LINE並傳送訂單，以利後續對帳、確認訂單及聯繫。<br><br><button class="primary" onclick="copyOrder()">複製訂單內容</button> <a class="secondary" style="display:inline-block;text-decoration:none;margin-left:8px" href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">加入官方LINE</a>';
 }
 async function copyOrder(){
   try{await navigator.clipboard.writeText(window.orderText);alert('訂單內容已複製，可貼到官方LINE。')}
   catch(e){prompt('請複製以下訂單內容：',window.orderText)}
 }
+
+const phoneInput=document.getElementById('phone');
+const last5Input=document.getElementById('last5');
+
+phoneInput.addEventListener('input',()=>{
+  phoneInput.value=phoneInput.value.replace(/\D/g,'').slice(0,10);
+});
+last5Input.addEventListener('input',()=>{
+  last5Input.value=last5Input.value.replace(/\D/g,'').slice(0,5);
+});
+
 renderProducts();
 </script>
 </body>
