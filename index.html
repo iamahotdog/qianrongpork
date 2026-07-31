@@ -36,7 +36,7 @@ button{cursor:pointer}
 .guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .guide-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px}
 .guide-card h3{margin:0 0 8px;font-size:19px}
-.guide-card img{width:100%;border-radius:12px;max-height:310px;object-fit:contain}
+.guide-card img{width:100%;border-radius:12px;max-height:380px;object-fit:contain}
 .next-wrap{text-align:center;margin-top:18px}
 .primary{border:0;background:var(--coral);color:#fff;border-radius:14px;padding:14px 22px;font-size:16px;font-weight:800}
 .secondary{border:1px solid var(--olive);background:#fff;color:var(--olive);border-radius:14px;padding:13px 18px;font-size:16px;font-weight:800}
@@ -46,33 +46,36 @@ button{cursor:pointer}
 .section-title{margin:4px 0 14px}.section-title h2{margin:0;font-size:26px}.section-title p{margin:6px 0 0;color:var(--muted)}
 .origin-note{
   margin:0 0 18px;
-  padding:18px 20px 18px 72px;
-  background:linear-gradient(135deg,#f3f1df 0%,#fffaf2 58%,#fffdf9 100%);
+  padding:18px 20px;
+  background:linear-gradient(135deg,#f5f1df 0%,#fffaf2 65%,#fffdf9 100%);
   border:1px solid #d8d2aa;
   border-left:6px solid var(--olive);
-  border-radius:18px;
-  line-height:1.75;
+  border-radius:20px;
+  display:flex;
+  align-items:center;
+  gap:18px;
   color:#6f6258;
-  position:relative;
   box-shadow:0 8px 20px rgba(74,43,29,.05)
 }
-.origin-note::before{
-  content:"產地";
-  position:absolute;
-  left:18px;
-  top:18px;
-  width:38px;
-  height:38px;
+.origin-badge{
+  flex:0 0 58px;
+  width:58px;
+  height:58px;
   border-radius:50%;
-  display:grid;
-  place-items:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
   background:var(--olive);
   color:#fff;
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:.05em
+  font-size:16px;
+  line-height:1.05;
+  font-weight:900;
+  letter-spacing:.04em
 }
-.origin-note strong{display:block;color:var(--brown);font-size:20px;margin-bottom:5px}
+.origin-copy{min-width:0}
+.origin-copy strong{display:block;color:var(--brown);font-size:20px;margin-bottom:4px}
+.origin-copy span{display:block;line-height:1.65;font-size:14px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .card{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 6px 18px rgba(74,43,29,.05)}
 .card img{width:100%;aspect-ratio:1/1;object-fit:cover}
@@ -154,8 +157,8 @@ button{cursor:pointer}
   <main class="wrap">
     <section class="welcome">
       <div class="eyebrow">來自屏東東港的好豬肉</div>
-      <h1>千容肉品首次團購開跑</h1>
-      <p>來自屏東東港的新鮮豬肉，每日新鮮分切並以冷凍方式配送，希望把安心、好吃的豬肉送到您的餐桌。</p>
+      <h1>歡迎參加千容肉品首次團購</h1>
+      <p>我們用心挑選來自屏東的新鮮豬肉，每日新鮮分切、冷凍配送，希望把安心又美味的豬肉送到您的餐桌。</p>
     </section>
     <section class="panel">
       <div class="guide-grid">
@@ -177,8 +180,11 @@ button{cursor:pointer}
   </div>
   <main class="wrap">
     <div class="origin-note">
-      <strong>來自屏東的新鮮豬肉</strong>
-      嚴選屏東在地豬肉，每日新鮮分切並以冷凍方式配送，讓每一包豬肉都保有安心品質與新鮮風味。
+      <div class="origin-badge" aria-hidden="true">產<br>地</div>
+      <div class="origin-copy">
+        <strong>來自屏東的新鮮豬肉</strong>
+        <span>嚴選屏東在地豬肉，每日新鮮分切並以冷凍方式配送，讓每一包豬肉都保有安心品質與新鮮風味。</span>
+      </div>
     </div>
     <section id="products" class="grid"></section>
     <div class="shop-summary">
@@ -209,15 +215,15 @@ button{cursor:pointer}
           <div class="price-row total"><span>應付總額</span><strong id="grandTotal">$290</strong></div>
         </div>
         <div class="shipping-note">
-          冷凍宅配每箱290元；商品滿3,000元免運。選擇臺北市面交則免運。
+          冷凍宅配每箱290元；商品滿3,000元免運。選擇臺北面交者，請私訊官方LINE聯繫可面交時程。
         </div>
 
         <div class="payment-box">
           <h3>匯款資訊</h3>
           <div class="payment-lines">
-            <p><span>銀行（分行）：</span><strong>中國信託長春分局 822190</strong></p>
-            <p><span>帳戶：</span><strong>123-456-789</strong></p>
-            <p><span>帳戶姓名：</span><strong>熱狗</strong></p>
+            <div class="payment-line"><span>銀行（分行）：</span><strong>中國信託長春分局 822190</strong></div>
+            <div class="payment-line"><span>帳戶：</span><strong>123-456-789</strong></div>
+            <div class="payment-line"><span>帳戶姓名：</span><strong>熱狗</strong></div>
           </div>
         </div>
 
@@ -232,7 +238,7 @@ button{cursor:pointer}
         <h2>訂購人／收件資料</h2>
         <div class="fields">
           <div class="field"><label>訂購人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="buyerName" required autocomplete="name" placeholder="請輸入姓名"></div>
-          <div class="field"><label>聯絡電話 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="09[0-9]{8}" required placeholder="請輸入09開頭的10碼手機號碼"></div>
+          <div class="field"><label>聯絡電話 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="09[0-9]{8}" required placeholder="09xx-xxx-xxx"></div>
           <div class="field full"><label>配送方式</label>
             <select id="shipping" onchange="updateCheckout()">
               <option value="290">黑貓冷凍宅急便（290元）</option>
@@ -242,7 +248,7 @@ button{cursor:pointer}
           </div>
           <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="若同訂購人可填相同姓名"></div>
           <div class="field"><label>匯款帳號後五碼 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="last5" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required placeholder="請輸入5碼數字"></div>
-          <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交可填方便聯繫的地點"></textarea></div>
+          <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交者僅需填寫「面交」兩字"></textarea></div>
           <div class="field full"><label>備註</label><textarea id="note" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
         </div>
         <div class="checkout-actions">
