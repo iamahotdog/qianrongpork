@@ -1,23 +1,13 @@
-千容肉品訂購 Web App v13
+千容肉品訂購 Web App v14
 
-已串接 Google Apps Script：
-https://script.google.com/macros/s/AKfycbx72QKjh_PQpb4FlywC5m0PkzmoC4UuERCe4Ja4nR0MbP_evSRKw_5SLnLLZHSxPT6F/exec
+本次僅調整：
+1. 首頁「團購流程」與「點擊加入官方LINE好友」標題：
+   - 置中
+   - 加粗
+   - 新增短底線
+   - 不更動圖片、位置及其他版面
+2. 複製至LINE的訂單內容改為精簡格式，且不含空白行。
+3. 訂單編號會在送出時由前端產生，並一併傳送至Google Apps Script。
 
-送出訂單後會將以下資料寫入 Google Sheet：
-- 訂購人姓名
-- 聯絡電話
-- 配送方式
-- 收件人姓名
-- 收件地址
-- 商品明細
-- 總包數
-- 商品金額
-- 運費
-- 應付總額
-- 匯款後五碼
-- 備註
-
-注意：
-1. Apps Script 部署必須設定為「執行身分：我」及「誰可以存取：任何人」。
-2. 此版本使用 no-cors 方式送出，以避免 GitHub Pages 跨網域限制。
-3. 上架後請實際送一筆測試訂單，確認 Google Sheet 有新增資料。
+Apps Script建議同步改為：
+const orderNumber = data.orderNumber || ('QR' + Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyyMMddHHmmss'));
