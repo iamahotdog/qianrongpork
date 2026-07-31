@@ -53,7 +53,7 @@ button{cursor:pointer}
   left:12%;
   right:12%;
   bottom:0;
-  height:2px;
+  height:1px;
   border-radius:999px;
   background:var(--brown);
   opacity:.9
@@ -139,6 +139,62 @@ button{cursor:pointer}
 .checkout-actions{display:flex;gap:10px;margin-top:16px}
 .checkout-actions button{flex:1}
 .done{display:none;margin-top:14px;padding:14px;background:#f2f5e8;border:1px solid #d9dfbf;border-radius:14px;line-height:1.7}
+
+.success-wrap{
+  max-width:720px;
+  margin:40px auto 0;
+  padding:0 14px 110px
+}
+.success-card{
+  background:#f4f6e9;
+  border:1px solid #d6ddb7;
+  border-radius:24px;
+  padding:28px;
+  text-align:center;
+  box-shadow:0 10px 28px rgba(74,43,29,.06)
+}
+.success-icon{
+  width:68px;
+  height:68px;
+  margin:0 auto 16px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:var(--olive);
+  color:white;
+  font-size:34px;
+  font-weight:900
+}
+.success-card h1{margin:0 0 10px;font-size:30px}
+.success-card p{margin:0;color:var(--muted);line-height:1.8}
+.success-order-no{
+  margin:20px 0 0;
+  padding:14px 18px;
+  background:#fff;
+  border:1px solid #d9dfbf;
+  border-radius:16px;
+  font-size:15px
+}
+.success-order-no strong{
+  display:block;
+  margin-top:4px;
+  font-size:22px;
+  color:var(--brown);
+  letter-spacing:.03em
+}
+.success-actions{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin-top:22px;
+  flex-wrap:wrap
+}
+.success-actions a,
+.success-actions button{
+  min-width:170px;
+  text-decoration:none
+}
+
 @media(max-width:760px){
   .site-nav-inner{height:58px;padding:6px 12px}.site-logo{height:40px}.site-note{display:none}
   .topbar{top:58px}.topbar-inner{grid-template-columns:110px 1fr 110px;padding:10px}
@@ -157,6 +213,12 @@ button{cursor:pointer}
   .field.full{grid-column:auto}
   .order-card,.form-card{padding:14px}
   .shop-summary{margin:18px -10px -90px}
+  .success-wrap{margin-top:22px;padding:0 10px 90px}
+  .success-card{padding:22px 16px}
+  .success-card h1{font-size:24px}
+  .success-card p{font-size:14px}
+  .success-actions{flex-direction:column}
+  .success-actions a,.success-actions button{width:100%;min-width:0}
 }
 @media(max-width:380px){
   .topbar-inner{grid-template-columns:94px 1fr 94px}
@@ -278,10 +340,28 @@ button{cursor:pointer}
           <button class="secondary" onclick="goPage('pageShop')">返回選購</button>
           <button id="submitOrderBtn" class="primary" onclick="submitOrder()">送出訂單</button>
         </div>
-        <div id="done" class="done"></div>
       </section>
     </div>
   </main>
+</section>
+
+
+<section id="pageSuccess" class="page">
+  <div class="success-wrap">
+    <section class="success-card">
+      <div class="success-icon">✓</div>
+      <h1>感謝您的訂購</h1>
+      <p>訂單已成功送出並完成紀錄。<br>請複製訂單內容後傳送至千容肉品官方LINE，以利後續對帳、確認訂單及聯繫。</p>
+      <div class="success-order-no">
+        訂單編號
+        <strong id="successOrderNumber">—</strong>
+      </div>
+      <div class="success-actions">
+        <button class="primary" onclick="copyOrder()">複製訂單內容</button>
+        <a class="secondary" href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">加入官方LINE</a>
+      </div>
+    </section>
+  </div>
 </section>
 
 <script>
@@ -437,10 +517,8 @@ ${itemLines}
 配送方式：${payload.shippingMethod.replace(/（.*?）/g,'').trim()}
 匯款後五碼：${payload.last5}`;
 
-    const done=document.getElementById('done');
-    done.style.display='block';
-    done.innerHTML='<strong>訂單已送出。</strong><br>系統已將訂單寫入紀錄。請再複製訂單內容並傳送至千容肉品官方LINE，以利後續對帳、確認訂單及聯繫。<br><br><button class="primary" onclick="copyOrder()">複製訂單內容</button> <a class="secondary" style="display:inline-block;text-decoration:none;margin-left:8px" href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">加入官方LINE</a>';
-    done.scrollIntoView({behavior:'smooth',block:'center'});
+    document.getElementById('successOrderNumber').textContent=orderNumber;
+    goPage('pageSuccess');
   }catch(error){
     console.error(error);
     alert('訂單送出失敗，請確認網路連線後再試一次。');
