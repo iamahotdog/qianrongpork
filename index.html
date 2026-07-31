@@ -38,7 +38,7 @@ button{cursor:pointer}
 .guide-card h3{margin:0 0 8px;font-size:19px}
 .guide-card img{width:100%;border-radius:12px;max-height:380px;object-fit:contain}
 .next-wrap{text-align:center;margin-top:18px}
-.primary{border:0;background:var(--coral);color:#fff;border-radius:14px;padding:14px 22px;font-size:16px;font-weight:800}
+.primary{border:0;background:var(--coral);color:#fff;border-radius:14px;padding:14px 22px;font-size:16px;font-weight:800}.primary:disabled{opacity:.6;cursor:not-allowed}
 .secondary{border:1px solid var(--olive);background:#fff;color:var(--olive);border-radius:14px;padding:13px 18px;font-size:16px;font-weight:800}
 .topbar{position:sticky;top:68px;z-index:20;background:rgba(255,250,242,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .topbar-inner{max-width:980px;margin:auto;padding:12px 14px;display:grid;grid-template-columns:150px 1fr 150px;align-items:center}
@@ -253,7 +253,7 @@ button{cursor:pointer}
         </div>
         <div class="checkout-actions">
           <button class="secondary" onclick="goPage('pageShop')">返回選購</button>
-          <button class="primary" onclick="submitOrder()">送出訂單</button>
+          <button id="submitOrderBtn" class="primary" onclick="submitOrder()">送出訂單</button>
         </div>
         <div id="done" class="done"></div>
       </section>
@@ -262,6 +262,7 @@ button{cursor:pointer}
 </section>
 
 <script>
+const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx72QKjh_PQpb4FlywC5m0PkzmoC4UuERCe4Ja4nR0MbP_evSRKw_5SLnLLZHSxPT6F/exec';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png'},
   {name:'里肌肉', img:'assets/里肌肉.png', hot:true},
@@ -324,7 +325,7 @@ function updateCheckout(){
   document.getElementById('shippingAmount').textContent=ship===0?'免運':money(ship);
   document.getElementById('grandTotal').textContent=money(total);
 }
-function submitOrder(){
+async function submitOrder(){
   const required=[
     ['buyerName','請填寫訂購人姓名'],
     ['phone','請填寫聯絡電話'],
@@ -332,9 +333,14 @@ function submitOrder(){
     ['address','請填寫收件地址'],
     ['last5','請填寫匯款帳號後五碼']
   ];
+
   for(const [id,msg] of required){
     const el=document.getElementById(id);
-    if(!el.value.trim()){alert(msg);el.focus();return}
+    if(!el.value.trim()){
+      alert(msg);
+      el.focus();
+      return;
+    }
   }
 
   const phone=document.getElementById('phone');
@@ -350,25 +356,73 @@ function submitOrder(){
     last5.focus();
     return;
   }
-  const items=products.filter(p=>p.qty>0).map(p=>`${p.name}：${p.qty}包`).join('、');
-  const goods=goodsTotal(), ship=shippingFee(), total=goods+ship;
+
+  const chosen=products.filter(p=>p.qty>0);
+  if(chosen.length===0){
+    alert('請先選擇至少一項商品。');
+    goPage('pageShop');
+    return;
+  }
+
+  const goods=goodsTotal();
+  const ship=shippingFee();
+  const total=goods+ship;
   const shipText=document.getElementById('shipping').selectedOptions[0].text;
-  window.orderText=`【千容肉品訂單】
-商品：${items}
+  const itemsText=chosen.map(p=>`${p.name} × ${p.qty}包`).join('、');
+
+  const payload={
+    buyerName:document.getElementById('buyerName').value.trim(),
+    phone:phone.value.trim(),
+    shippingMethod:shipText,
+    receiverName:document.getElementById('receiverName').value.trim(),
+    address:document.getElementById('address').value.trim(),
+    items:itemsText,
+    totalQty:countTotal(),
+    goodsAmount:goods,
+    shippingFee:ship,
+    totalAmount:total,
+    last5:last5.value.trim(),
+    note:document.getElementById('note').value.trim()
+  };
+
+  const submitBtn=document.getElementById('submitOrderBtn');
+  const originalText=submitBtn.textContent;
+  submitBtn.disabled=true;
+  submitBtn.textContent='訂單送出中…';
+
+  try{
+    await fetch(GOOGLE_SHEET_ENDPOINT,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    });
+
+    window.orderText=`【千容肉品訂單】
+商品：${itemsText}
 商品金額：${money(goods)}
 運費：${ship===0?'免運':money(ship)}
 應付總額：${money(total)}
 
-訂購人：${document.getElementById('buyerName').value}
-電話：${document.getElementById('phone').value}
-配送方式：${shipText}
-收件人：${document.getElementById('receiverName').value}
-地址：${document.getElementById('address').value}
-匯款後五碼：${document.getElementById('last5').value}
-備註：${document.getElementById('note').value||'無'}`;
-  const done=document.getElementById('done');
-  done.style.display='block';
-  done.innerHTML='<strong>訂單內容已整理完成。</strong><br>請先複製訂單內容，再點擊下方按鈕加入官方LINE並傳送訂單，以利後續對帳、確認訂單及聯繫。<br><br><button class="primary" onclick="copyOrder()">複製訂單內容</button> <a class="secondary" style="display:inline-block;text-decoration:none;margin-left:8px" href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">加入官方LINE</a>';
+訂購人：${payload.buyerName}
+電話：${payload.phone}
+配送方式：${payload.shippingMethod}
+收件人：${payload.receiverName}
+地址：${payload.address}
+匯款後五碼：${payload.last5}
+備註：${payload.note||'無'}`;
+
+    const done=document.getElementById('done');
+    done.style.display='block';
+    done.innerHTML='<strong>訂單已送出。</strong><br>系統已將訂單寫入紀錄。請再複製訂單內容並傳送至千容肉品官方LINE，以利後續對帳、確認訂單及聯繫。<br><br><button class="primary" onclick="copyOrder()">複製訂單內容</button> <a class="secondary" style="display:inline-block;text-decoration:none;margin-left:8px" href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">加入官方LINE</a>';
+    done.scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(error){
+    console.error(error);
+    alert('訂單送出失敗，請確認網路連線後再試一次。');
+  }finally{
+    submitBtn.disabled=false;
+    submitBtn.textContent=originalText;
+  }
 }
 async function copyOrder(){
   try{await navigator.clipboard.writeText(window.orderText);alert('訂單內容已複製，可貼到官方LINE。')}
