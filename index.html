@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>千容肉品｜團購訂購</title>
+<title>千容肉品｜屏東豬肉團購</title>
+<meta name="description" content="千容肉品｜來自屏東東港的新鮮豬肉團購，每日新鮮分切、冷凍宅配。">
+<meta property="og:title" content="千容肉品｜屏東豬肉團購">
+<meta property="og:description" content="來自屏東東港的新鮮豬肉，每日新鮮分切、冷凍宅配。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root{
   --cream:#fffaf2; --paper:#fffdf9; --olive:#8f9060; --brown:#4a2b1d;
@@ -39,14 +44,50 @@ button{cursor:pointer}
 .topbar-inner{max-width:980px;margin:auto;padding:12px 14px;display:grid;grid-template-columns:150px 1fr 150px;align-items:center}
 .topbar h1{margin:0;text-align:center;font-size:22px}
 .section-title{margin:4px 0 14px}.section-title h2{margin:0;font-size:26px}.section-title p{margin:6px 0 0;color:var(--muted)}
+.origin-note{
+  margin:0 0 18px;
+  padding:18px 20px 18px 72px;
+  background:linear-gradient(135deg,#f3f1df 0%,#fffaf2 58%,#fffdf9 100%);
+  border:1px solid #d8d2aa;
+  border-left:6px solid var(--olive);
+  border-radius:18px;
+  line-height:1.75;
+  color:#6f6258;
+  position:relative;
+  box-shadow:0 8px 20px rgba(74,43,29,.05)
+}
+.origin-note::before{
+  content:"產地";
+  position:absolute;
+  left:18px;
+  top:18px;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:var(--olive);
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.05em
+}
+.origin-note strong{display:block;color:var(--brown);font-size:20px;margin-bottom:5px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 6px 18px rgba(74,43,29,.05)}
+.card{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 6px 18px rgba(74,43,29,.05)}
 .card img{width:100%;aspect-ratio:1/1;object-fit:cover}
+.hot-badge{
+  position:absolute;top:10px;left:10px;z-index:2;
+  background:#8e2f22;color:#fff;border:2px solid #fff6ee;
+  border-radius:999px;padding:7px 11px;font-size:13px;font-weight:900;
+  box-shadow:0 5px 14px rgba(88,31,23,.28);
+  letter-spacing:.04em
+}
 .card-body{padding:12px}
 .name{font-size:18px;font-weight:800}.meta{font-size:13px;color:var(--muted);margin-top:4px}
 .control{display:flex;align-items:center;justify-content:space-between;margin-top:12px;background:var(--soft);border-radius:12px;padding:7px}
 .control button{width:38px;height:38px;border:0;border-radius:10px;background:white;color:var(--brown);font-size:22px;font-weight:800}
-.qty{font-size:19px;font-weight:800}.subtotal{text-align:right;margin-top:8px;font-weight:700;font-size:14px}
+.qty{font-size:19px;font-weight:800}
 .shop-summary{position:sticky;bottom:0;background:rgba(255,253,249,.97);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 14px calc(12px + env(safe-area-inset-bottom));margin:18px -14px -110px}
 .shop-summary-inner{max-width:980px;margin:auto;display:flex;align-items:center;gap:12px}
 .shop-summary .amount{flex:1}.amount small{display:block;color:var(--muted)}.amount strong{font-size:23px}
@@ -119,7 +160,7 @@ button{cursor:pointer}
     <section class="panel">
       <div class="guide-grid">
         <div class="guide-card"><h3>團購流程</h3><img src="assets/flow.png" alt="團購流程"></div>
-        <div class="guide-card"><h3>加入官方LINE</h3><img src="assets/line.png" alt="加入官方LINE"></div>
+        <div class="guide-card"><h3>加入官方LINE</h3><a href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener"><img src="assets/line.png" alt="加入官方LINE"></a></div>
       </div>
       <div class="next-wrap"><button class="primary" onclick="goPage('pageShop')">下一步：開始選購</button></div>
     </section>
@@ -135,6 +176,10 @@ button{cursor:pointer}
     </div>
   </div>
   <main class="wrap">
+    <div class="origin-note">
+      <strong>來自屏東的新鮮豬肉</strong>
+      嚴選屏東在地豬肉，每日新鮮分切並以冷凍方式配送，讓每一包豬肉都保有安心品質與新鮮風味。
+    </div>
     <section id="products" class="grid"></section>
     <div class="shop-summary">
       <div class="shop-summary-inner">
@@ -165,6 +210,21 @@ button{cursor:pointer}
         </div>
         <div class="shipping-note">
           冷凍宅配每箱290元；商品滿3,000元免運。選擇臺北市面交則免運。
+        </div>
+
+        <div class="payment-box">
+          <h3>匯款資訊</h3>
+          <div class="payment-grid">
+            <span>銀行（分行）</span><strong>中國信託長春分局</strong>
+            <span>帳戶</span><strong>123-456-789</strong>
+            <span>帳戶姓名</span><strong>熱狗</strong>
+          </div>
+        </div>
+
+        <div class="line-reminder">
+          完成匯款後，請務必加入
+          <a href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">千容肉品官方LINE</a>，
+          並提供匯款後五碼，以利對帳與確認訂單。
         </div>
       </section>
 
@@ -198,10 +258,10 @@ button{cursor:pointer}
 <script>
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png'},
-  {name:'里肌肉', img:'assets/里肌肉.png'},
+  {name:'里肌肉', img:'assets/里肌肉.png', hot:true},
   {name:'梅花肉', img:'assets/梅花肉.png'},
   {name:'豬腳', img:'assets/豬腳.png'},
-  {name:'三層肉', img:'assets/三層肉.png'},
+  {name:'三層肉', img:'assets/三層肉.png', hot:true},
   {name:'排骨', img:'assets/排骨.png'}
 ].map(p=>({...p,price:200,qty:0}));
 
@@ -216,6 +276,7 @@ function countTotal(){return products.reduce((s,p)=>s+p.qty,0)}
 function renderProducts(){
   document.getElementById('products').innerHTML=products.map((p,i)=>`
     <article class="card">
+      ${p.hot ? '<span class="hot-badge">熱銷</span>' : ''}
       <img src="${p.img}" alt="${p.name}">
       <div class="card-body">
         <div class="name">${p.name}</div>
@@ -225,7 +286,6 @@ function renderProducts(){
           <span class="qty">${p.qty}包</span>
           <button onclick="changeQty(${i},1)">＋</button>
         </div>
-        <div class="subtotal">小計：${money(p.qty*p.price)}</div>
       </div>
     </article>`).join('');
   document.getElementById('countText').textContent=`共${countTotal()}包`;
@@ -288,7 +348,7 @@ function submitOrder(){
 備註：${document.getElementById('note').value||'無'}`;
   const done=document.getElementById('done');
   done.style.display='block';
-  done.innerHTML='<strong>訂單內容已整理完成。</strong><br>請複製訂單內容並傳送至千容肉品官方LINE，以利對帳與確認。<br><br><button class="primary" onclick="copyOrder()">複製訂單內容</button>';
+  done.innerHTML='<strong>訂單內容已整理完成。</strong><br>請先複製訂單內容，再點擊下方按鈕加入官方LINE並傳送訂單，以利對帳與確認。<br><br><button class="primary" onclick="copyOrder()">複製訂單內容</button> <a class="secondary" style="display:inline-block;text-decoration:none;margin-left:8px" href="https://line.me/ti/p/q5FJMSylW9" target="_blank" rel="noopener">加入官方LINE</a>';
 }
 async function copyOrder(){
   try{await navigator.clipboard.writeText(window.orderText);alert('訂單內容已複製，可貼到官方LINE。')}
