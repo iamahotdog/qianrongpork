@@ -350,6 +350,32 @@ button{cursor:pointer}
   }
 }
 
+
+.info-scroll-bottom{
+  display:none
+}
+@media(max-width:760px){
+  #pageInfo.active .info-scroll-bottom{
+    position:fixed;
+    right:16px;
+    bottom:calc(18px + env(safe-area-inset-bottom));
+    z-index:40;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:92px;
+    min-height:46px;
+    padding:10px 14px;
+    border:0;
+    border-radius:999px;
+    background:var(--olive);
+    color:#fff;
+    font-size:14px;
+    font-weight:900;
+    box-shadow:0 8px 22px rgba(74,43,29,.22)
+  }
+}
+
 </style>
 </head>
 <body>
@@ -573,12 +599,21 @@ button{cursor:pointer}
         </div>
       </section>
 
-      <div class="info-actions">
+      <div id="infoPageBottom" class="info-actions">
         <button class="primary" onclick="closeInfoPage()">返回上一頁</button>
         <a class="secondary" href="https://lin.ee/rvNiERx" target="_blank" rel="noopener">聯繫官方LINE</a>
       </div>
     </article>
   </main>
+
+  <button
+    class="info-scroll-bottom"
+    type="button"
+    onclick="scrollInfoToBottom()"
+    aria-label="前往食品保存與配送說明頁底部"
+  >
+    ↓ 到底部
+  </button>
 </section>
 
 <script>
@@ -629,6 +664,14 @@ function loadHotSaleRanking(){
   document.body.appendChild(script);
 }
 
+
+
+function scrollInfoToBottom(){
+  document.getElementById('infoPageBottom')?.scrollIntoView({
+    behavior:'smooth',
+    block:'end'
+  });
+}
 
 function openInfoPage(returnPage){
   infoReturnPage=returnPage || 'pageIntro';
