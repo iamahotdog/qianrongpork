@@ -327,6 +327,29 @@ button{cursor:pointer}
   .info-actions button,.info-actions a{width:100%;text-align:center}
 }
 
+
+.info-topbar-inner{
+  grid-template-columns:1fr minmax(0,auto) 1fr
+}
+.info-topbar-inner h1{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+@media(max-width:760px){
+  .info-topbar-inner{
+    grid-template-columns:20px minmax(0,1fr) 20px;
+    padding:12px 10px
+  }
+  .info-topbar-inner h1{
+    font-size:18px;
+    line-height:1.35;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip
+  }
+}
+
 </style>
 </head>
 <body>
@@ -485,8 +508,8 @@ button{cursor:pointer}
 
 <section id="pageInfo" class="page">
   <div class="topbar">
-    <div class="topbar-inner">
-      <button class="secondary" onclick="closeInfoPage()">返回上一頁</button>
+    <div class="topbar-inner info-topbar-inner">
+      <span></span>
       <h1>食品保存與配送說明</h1>
       <span></span>
     </div>
