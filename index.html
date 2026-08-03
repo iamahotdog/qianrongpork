@@ -231,6 +231,102 @@ button{cursor:pointer}
   .grid{gap:6px}.card-body{padding:8px}.name{font-size:15px}
   .control{padding:5px}.control button{width:30px;height:30px;font-size:20px}
 }
+
+.info-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:var(--olive);
+  font-weight:800;
+  text-decoration:none;
+  border-bottom:1px solid rgba(143,144,96,.45);
+  padding-bottom:2px
+}
+.info-link:hover{border-bottom-color:var(--olive)}
+.intro-info-link{text-align:center;margin-top:14px;font-size:14px}
+.product-info{
+  margin:-6px 0 18px;
+  text-align:right;
+  font-size:14px
+}
+.terms-box{
+  margin-top:14px;
+  padding:13px 14px;
+  border:1px solid #dfd3c3;
+  border-radius:14px;
+  background:#fffaf4;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  line-height:1.6;
+  color:var(--muted);
+  font-size:14px
+}
+.terms-box input{
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  margin-top:2px;
+  accent-color:var(--olive)
+}
+.terms-box label{cursor:pointer}
+.info-page-wrap{max-width:820px;margin:auto;padding:22px 14px 110px}
+.info-page-card{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:26px;
+  box-shadow:0 8px 24px rgba(74,43,29,.05)
+}
+.info-page-card h1{margin:0 0 8px;font-size:30px}
+.info-intro{margin:0 0 22px;color:var(--muted);line-height:1.8}
+.info-section{
+  padding:18px 0;
+  border-top:1px solid var(--line)
+}
+.info-section:first-of-type{border-top:0;padding-top:0}
+.info-section h2{margin:0 0 10px;font-size:21px}
+.info-section p{margin:0;color:var(--muted);line-height:1.85}
+.info-section ul,.info-section ol{
+  margin:10px 0 0;
+  padding-left:1.4em;
+  color:var(--muted);
+  line-height:1.85
+}
+.info-highlight{
+  margin-top:12px;
+  padding:14px 16px;
+  background:#f4f5e9;
+  border:1px solid #daddbd;
+  border-radius:14px;
+  line-height:1.8
+}
+.info-actions{
+  margin-top:24px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap
+}
+.site-footer{
+  max-width:980px;
+  margin:0 auto;
+  padding:18px 14px 28px;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px
+}
+.site-footer a{color:var(--olive);font-weight:800;text-decoration:none}
+@media(max-width:760px){
+  .product-info{text-align:left}
+  .info-page-wrap{padding:12px 10px 90px}
+  .info-page-card{padding:20px 16px}
+  .info-page-card h1{font-size:25px}
+  .info-section h2{font-size:19px}
+  .info-actions{flex-direction:column}
+  .info-actions button,.info-actions a{width:100%;text-align:center}
+}
+
 </style>
 </head>
 <body>
@@ -256,6 +352,9 @@ button{cursor:pointer}
         <div class="guide-card"><h3>點擊加入官方LINE好友</h3><a href="https://lin.ee/rvNiERx" target="_blank" rel="noopener"><img src="assets/line.png" alt="加入官方LINE"></a></div>
       </div>
       <div class="next-wrap"><button class="primary" onclick="goPage('pageShop')">下一步：開始選購</button></div>
+      <div class="intro-info-link">
+        <a class="info-link" href="#" onclick="openInfoPage('pageIntro');return false;">下單前請詳閱｜食品保存與配送說明</a>
+      </div>
     </section>
   </main>
 </section>
@@ -275,6 +374,10 @@ button{cursor:pointer}
         <strong>來自屏東的新鮮豬肉</strong>
         <span>嚴選屏東在地豬肉，每日新鮮分切並以冷凍方式配送，讓每一包豬肉都保有安心品質與新鮮風味。</span>
       </div>
+    </div>
+    <div class="product-info">
+      保存方式：攝氏-18°C以下冷凍保存｜有效日期依商品包裝標示為準　
+      <a class="info-link" href="#" onclick="openInfoPage('pageShop');return false;">查看完整說明</a>
     </div>
     <section id="products" class="grid"></section>
     <div class="shop-summary">
@@ -341,6 +444,13 @@ button{cursor:pointer}
           <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交者僅需填寫「面交」兩字"></textarea></div>
           <div class="field full"><label>備註</label><textarea id="note" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
         </div>
+        <div class="terms-box">
+          <input id="agreeFoodNotice" type="checkbox">
+          <label for="agreeFoodNotice">
+            我已閱讀並同意
+            <a class="info-link" href="#" onclick="openInfoPage('pageCheckout');return false;">食品保存、配送及生鮮商品退換貨說明</a>。
+          </label>
+        </div>
         <div class="checkout-actions">
           <button class="secondary" onclick="goPage('pageShop')">返回選購</button>
           <button id="submitOrderBtn" class="primary" onclick="submitOrder()">送出訂單</button>
@@ -365,25 +475,150 @@ button{cursor:pointer}
         <button class="primary" onclick="copyOrder()">複製訂單內容</button>
         <a id="sendOrderToLineBtn" class="secondary" href="https://lin.ee/rvNiERx" target="_blank" rel="noopener">前往LINE傳送訂單</a>
       </div>
+      <div class="intro-info-link">
+        <a class="info-link" href="#" onclick="openInfoPage('pageSuccess');return false;">查看食品保存與配送說明</a>
+      </div>
     </section>
   </div>
 </section>
 
+
+<section id="pageInfo" class="page">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <button class="secondary" onclick="closeInfoPage()">返回上一頁</button>
+      <h1>食品保存與配送說明</h1>
+      <span></span>
+    </div>
+  </div>
+  <main class="info-page-wrap">
+    <article class="info-page-card">
+      <h1>食品保存與配送說明</h1>
+      <p class="info-intro">為維持肉品品質與食用安全，訂購前請詳閱以下說明。</p>
+
+      <section class="info-section">
+        <h2>一、商品說明</h2>
+        <p>本店商品為生鮮冷凍豬肉，網站商品圖片僅供參考。肉品會因實際分切位置及個體差異，在形狀、大小、色澤與油花分布上略有不同，實際商品以收到的肉品為準。</p>
+        <p style="margin-top:8px">上述自然差異不影響正常食用品質，恕不作為退換貨之依據。</p>
+      </section>
+
+      <section class="info-section">
+        <h2>二、保存方式</h2>
+        <p>商品收到後，請立即置於攝氏-18°C以下冷凍保存。一般家用冷凍庫的冷凍區即可使用，但請確認設備能維持適當的冷凍溫度。</p>
+        <div class="info-highlight">
+          <strong>保存方式：</strong>攝氏-18°C以下冷凍保存<br>
+          <strong>有效日期：</strong>依商品包裝貼紙所標示之日期為準
+        </div>
+        <ul>
+          <li>解凍後請儘速料理及食用。</li>
+          <li>肉品請充分加熱後再食用。</li>
+          <li>請避免反覆解凍及再次冷凍，以維持肉品品質與食品安全。</li>
+          <li>若商品已完全解凍，請勿長時間置於室溫環境。</li>
+        </ul>
+      </section>
+
+      <section class="info-section">
+        <h2>三、冷凍配送說明</h2>
+        <p>本店商品採冷凍方式配送。配送過程中，可能因搬運產生真空包裝皺摺、肉品位置移動或外觀些微變化；若包裝完整且商品仍維持冷凍狀態，通常不影響食用品質。</p>
+        <p style="margin-top:10px">收到商品後，請儘速確認：</p>
+        <ul>
+          <li>商品品項及數量是否正確。</li>
+          <li>外包裝及真空包裝是否完整。</li>
+          <li>商品是否仍維持冷凍狀態。</li>
+          <li>是否有明顯異味、異常滲漏或其他異常情形。</li>
+        </ul>
+      </section>
+
+      <section class="info-section">
+        <h2>四、退換貨說明</h2>
+        <p>生鮮食品因保存期限及衛生安全考量，除商品寄送錯誤、包裝破損、異常解凍，或其他可歸責於本店之情形外，不適用七日無條件退貨。</p>
+        <p style="margin-top:10px">若收到商品時發現異常，請：</p>
+        <ol>
+          <li>暫勿拆封、烹煮或丟棄商品。</li>
+          <li>保留商品、外箱及完整包裝。</li>
+          <li>拍攝商品與異常狀況照片。</li>
+          <li>儘速透過千容肉品官方LINE與我們聯繫。</li>
+        </ol>
+        <p style="margin-top:10px">我們將依實際狀況協助確認及處理。</p>
+      </section>
+
+      <section class="info-section">
+        <h2>五、聯繫方式</h2>
+        <p>若對商品保存、配送或訂單內容有任何疑問，請透過千容肉品官方LINE聯繫。</p>
+        <div class="info-highlight">
+          <strong>LINE官方帳號：</strong>@011qisjt
+        </div>
+      </section>
+
+      <div class="info-actions">
+        <button class="primary" onclick="closeInfoPage()">返回上一頁</button>
+        <a class="secondary" href="https://lin.ee/rvNiERx" target="_blank" rel="noopener">聯繫官方LINE</a>
+      </div>
+    </article>
+  </main>
+</section>
+
 <script>
 const LINE_OA_ID = '@011qisjt';
+const HOT_SALE_MIN_QTY = 5;
+let hotSaleProducts = new Set();
+let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx72QKjh_PQpb4FlywC5m0PkzmoC4UuERCe4Ja4nR0MbP_evSRKw_5SLnLLZHSxPT6F/exec';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png'},
-  {name:'里肌肉', img:'assets/里肌肉.png', hot:true},
+  {name:'里肌肉', img:'assets/里肌肉.png'},
   {name:'梅花肉', img:'assets/梅花肉.png'},
   {name:'豬腳', img:'assets/豬腳.png'},
-  {name:'三層肉', img:'assets/三層肉.png', hot:true},
+  {name:'三層肉', img:'assets/三層肉.png'},
   {name:'排骨', img:'assets/排骨.png'}
 ].map(p=>({...p,price:200,qty:0}));
+
+
+function applyHotSaleRanking(data){
+  const rankings=Array.isArray(data?.rankings) ? data.rankings : [];
+  hotSaleProducts=new Set(
+    rankings
+      .filter(item=>Number(item.qty)>=HOT_SALE_MIN_QTY)
+      .slice(0,2)
+      .map(item=>item.name)
+  );
+  renderProducts();
+}
+
+function loadHotSaleRanking(){
+  const callbackName=`qianrongHotSale_${Date.now()}`;
+  const script=document.createElement('script');
+  const cleanup=()=>{
+    delete window[callbackName];
+    script.remove();
+  };
+
+  window[callbackName]=(data)=>{
+    try{
+      if(data?.success) applyHotSaleRanking(data);
+    }finally{
+      cleanup();
+    }
+  };
+
+  script.src=`${GOOGLE_SHEET_ENDPOINT}?action=hotSales&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+  script.onerror=cleanup;
+  document.body.appendChild(script);
+}
+
+
+function openInfoPage(returnPage){
+  infoReturnPage=returnPage || 'pageIntro';
+  goPage('pageInfo');
+}
+function closeInfoPage(){
+  goPage(infoReturnPage || 'pageIntro');
+}
 
 function goPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if(id==='pageShop') loadHotSaleRanking();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function money(n){return '$'+n.toLocaleString('zh-TW')}
@@ -400,7 +635,7 @@ function countTotal(){return products.reduce((s,p)=>s+p.qty,0)}
 function renderProducts(){
   document.getElementById('products').innerHTML=products.map((p,i)=>`
     <article class="card">
-      ${p.hot ? '<span class="hot-badge">熱銷</span>' : ''}
+      ${hotSaleProducts.has(p.name) ? '<span class="hot-badge">熱銷</span>' : ''}
       <img src="${p.img}" alt="${p.name}">
       <div class="card-body">
         <div class="name">${p.name}</div>
@@ -471,6 +706,13 @@ async function submitOrder(){
   if(!/^\d{5}$/.test(last5.value)){
     alert('匯款帳號後五碼請輸入5碼數字。');
     last5.focus();
+    return;
+  }
+
+  const agreeFoodNotice=document.getElementById('agreeFoodNotice');
+  if(!agreeFoodNotice.checked){
+    alert('請先閱讀並勾選食品保存、配送及退換貨說明。');
+    agreeFoodNotice.focus();
     return;
   }
 
@@ -553,6 +795,13 @@ last5Input.addEventListener('input',()=>{
 });
 
 renderProducts();
+loadHotSaleRanking();
 </script>
+
+<footer class="site-footer">
+  <a href="#" onclick="openInfoPage(document.querySelector('.page.active')?.id || 'pageIntro');return false;">食品保存與配送說明</a>
+  ｜ <a href="https://lin.ee/rvNiERx" target="_blank" rel="noopener">聯繫官方LINE</a>
+</footer>
+
 </body>
 </html>
