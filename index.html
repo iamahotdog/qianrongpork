@@ -37,7 +37,7 @@ button{cursor:pointer}
 .eyebrow{font-size:14px;color:var(--olive);font-weight:800;letter-spacing:.08em;margin-bottom:8px}
 .welcome h1{margin:0 0 12px;font-size:30px;line-height:1.35}
 .welcome p{margin:0;line-height:1.9;color:var(--muted)}
-.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.guide-grid{display:grid;grid-template-columns:1fr;gap:14px}
 .guide-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;overflow:hidden}
 .guide-card h3{
   width:max-content;
@@ -62,7 +62,7 @@ button{cursor:pointer}
   background:var(--brown);
   opacity:.9
 }
-.guide-card img{width:100%;border-radius:12px;max-height:380px;object-fit:contain}
+.guide-card img{width:100%;height:auto;border-radius:12px;max-height:none;object-fit:contain;display:block}
 .next-wrap{text-align:center;margin-top:18px}
 
 .primary{border:0;background:var(--coral);color:#fff;border-radius:14px;padding:14px 22px;font-size:16px;font-weight:800}.primary:disabled{opacity:.6;cursor:not-allowed}
@@ -209,7 +209,7 @@ button{cursor:pointer}
   .panel{padding:12px}
   .guide-grid{grid-template-columns:1fr}
   .guide-card h3{font-size:19px;margin-bottom:10px}
-  .guide-card img{max-height:230px}
+  .guide-card img{max-height:none}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .card-body{padding:9px}.name{font-size:16px}.meta{font-size:12px}
   .control button{width:34px;height:34px}.qty{font-size:17px}
@@ -226,7 +226,7 @@ button{cursor:pointer}
   .success-actions a,.success-actions button{width:100%;min-width:0}
   .origin-note{padding:12px 14px;gap:12px;border-left-width:4px;border-radius:16px}
   .origin-badge{flex:0 0 48px;width:48px;height:48px;font-size:14px}
-  .origin-copy strong{font-size:16px;line-height:1.25;margin-bottom:2px}
+  .origin-copy strong{font-size:15px;line-height:1.2;margin-bottom:2px}
   .origin-copy span{font-size:12px;line-height:1.45}
 }
 @media(max-width:380px){
@@ -404,8 +404,7 @@ button{cursor:pointer}
     <section class="panel">
       <div class="guide-grid">
         <div class="guide-card"><h3>團購流程</h3><img src="assets/flow.png" alt="團購流程"></div>
-        <div class="guide-card"><h3>點擊加入官方LINE好友</h3><a href="https://lin.ee/rvNiERx" target="_blank" rel="noopener"><img src="assets/line.png" alt="加入官方LINE"></a></div>
-      </div>
+              </div>
       <div class="next-wrap"><button class="primary" onclick="goPage('pageShop')">下一步：開始選購</button></div>
       <div class="intro-info-link">
         <a class="info-link" href="#" onclick="openInfoPage('pageIntro');return false;">下單前請詳閱｜食品保存與配送說明</a>
@@ -426,7 +425,7 @@ button{cursor:pointer}
     <div class="origin-note">
       <div class="origin-badge" aria-hidden="true">產<br>地</div>
       <div class="origin-copy">
-        <strong>來自屏東的<br>新鮮豬肉</strong>
+        <strong>來自屏東的新鮮豬肉</strong>
         <span>嚴選屏東在地豬肉，每日新鮮分切並以冷凍方式配送，讓每一包豬肉都保有安心品質與新鮮風味。</span>
       </div>
     </div>
