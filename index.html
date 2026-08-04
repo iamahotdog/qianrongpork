@@ -224,6 +224,10 @@ button{cursor:pointer}
   .success-card p{font-size:14px}
   .success-actions{flex-direction:column}
   .success-actions a,.success-actions button{width:100%;min-width:0}
+  .origin-note{padding:12px 14px;gap:12px;border-left-width:4px;border-radius:16px}
+  .origin-badge{flex:0 0 48px;width:48px;height:48px;font-size:14px}
+  .origin-copy strong{font-size:16px;line-height:1.25;margin-bottom:2px}
+  .origin-copy span{font-size:12px;line-height:1.45}
 }
 @media(max-width:380px){
   .topbar-inner{grid-template-columns:94px 1fr 94px}
@@ -376,6 +380,8 @@ button{cursor:pointer}
   }
 }
 
+
+.query-wrap{max-width:720px;margin:auto;padding:28px 14px 110px}.query-card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 8px 24px rgba(74,43,29,.05)}.query-card h1{margin:0 0 8px;font-size:30px}.query-card>p{margin:0 0 20px;color:var(--muted);line-height:1.8}.query-form{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}.query-form button{height:44px;white-space:nowrap}.query-result{display:none;margin-top:22px;border:1px solid #d9dfbf;border-radius:18px;background:#f4f6e9;padding:18px}.query-result.active{display:block}.query-result h2{margin:0 0 14px;font-size:22px}.query-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid rgba(143,144,96,.2)}.query-row:last-child{border-bottom:0}.query-row span{color:var(--muted)}.query-row strong{text-align:right}.query-message{display:none;margin-top:16px;padding:13px 14px;border-radius:14px;line-height:1.7}.query-message.show{display:block}.query-message.error{background:#fff3ef;border:1px solid #efc8bb;color:#8e3d2c}.query-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap}@media(max-width:760px){.query-wrap{padding:16px 10px 90px}.query-card{padding:20px 16px}.query-card h1{font-size:25px}.query-form{grid-template-columns:1fr}.query-form button{width:100%}.query-row{display:block}.query-row strong{display:block;text-align:left;margin-top:4px}}
 </style>
 </head>
 <body>
@@ -420,7 +426,7 @@ button{cursor:pointer}
     <div class="origin-note">
       <div class="origin-badge" aria-hidden="true">產<br>地</div>
       <div class="origin-copy">
-        <strong>來自屏東的新鮮豬肉</strong>
+        <strong>來自屏東的<br>新鮮豬肉</strong>
         <span>嚴選屏東在地豬肉，每日新鮮分切並以冷凍方式配送，讓每一包豬肉都保有安心品質與新鮮風味。</span>
       </div>
     </div>
@@ -616,6 +622,8 @@ button{cursor:pointer}
   </button>
 </section>
 
+
+<section id="pageOrderQuery" class="page"><div class="topbar"><div class="topbar-inner info-topbar-inner"><span></span><h1>訂單查詢</h1><span></span></div></div><main class="query-wrap"><section class="query-card"><h1>查詢訂單進度</h1><p>請輸入訂單編號與匯款帳號後五碼，查看目前的付款與出貨狀態。</p><div class="query-form"><div class="field"><label for="queryOrderNumber">訂單編號</label><input id="queryOrderNumber" type="text" autocomplete="off" placeholder="例如：QR20260803170201"></div><div class="field"><label for="queryLast5">匯款帳號後五碼</label><input id="queryLast5" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="請輸入5碼數字"></div><button id="queryOrderBtn" class="primary" type="button" onclick="queryOrder()">查詢訂單</button></div><div id="queryMessage" class="query-message"></div><section id="queryResult" class="query-result"><h2>訂單查詢結果</h2><div class="query-row"><span>訂單編號</span><strong id="resultOrderNumber">—</strong></div><div class="query-row"><span>商品</span><strong id="resultItems">—</strong></div><div class="query-row"><span>應付總額</span><strong id="resultTotal">—</strong></div><div class="query-row"><span>配送方式</span><strong id="resultShipping">—</strong></div><div class="query-row"><span>訂單狀態</span><strong id="resultOrderStatus">—</strong></div><div class="query-row"><span>付款狀態</span><strong id="resultPaymentStatus">—</strong></div><div class="query-row"><span>出貨狀態</span><strong id="resultShippingStatus">—</strong></div></section><div class="query-actions"><button class="secondary" type="button" onclick="goPage('pageIntro')">返回首頁</button><a class="secondary" href="https://lin.ee/rvNiERx" target="_blank" rel="noopener">聯繫官方LINE</a></div></section></main></section>
 <script>
 const LINE_OA_ID = '@011qisjt';
 const HOT_SALE_MIN_QTY = 5;
@@ -681,7 +689,7 @@ function closeInfoPage(){
   goPage(infoReturnPage || 'pageIntro');
 }
 
-function goPage(id){
+\nfunction setQueryMessage(message,type='error'){const b=document.getElementById('queryMessage');b.textContent=message;b.className=`query-message show ${type}`;}function clearQueryMessage(){const b=document.getElementById('queryMessage');b.textContent='';b.className='query-message';}function fillOrderQueryResult(o){document.getElementById('resultOrderNumber').textContent=o.orderNumber||'—';document.getElementById('resultItems').textContent=o.items||'—';document.getElementById('resultTotal').textContent=money(Number(o.totalAmount||0));document.getElementById('resultShipping').textContent=(o.shippingMethod||'—').replace(/（.*?）/g,'').trim();document.getElementById('resultOrderStatus').textContent=o.orderStatus||'已收到訂單';document.getElementById('resultPaymentStatus').textContent=o.paymentStatus||'待確認';document.getElementById('resultShippingStatus').textContent=o.shippingStatus||'尚未出貨';document.getElementById('queryResult').classList.add('active');}function queryOrder(){const n=document.getElementById('queryOrderNumber').value.trim().toUpperCase(),l=document.getElementById('queryLast5').value.trim(),btn=document.getElementById('queryOrderBtn');clearQueryMessage();document.getElementById('queryResult').classList.remove('active');if(!/^QR\d{14}$/.test(n)){setQueryMessage('請輸入正確的訂單編號，例如QR20260803170201。');return}if(!/^\d{5}$/.test(l)){setQueryMessage('匯款帳號後五碼請輸入5碼數字。');return}const cb=`qianrongOrderQuery_${Date.now()}`,s=document.createElement('script');btn.disabled=true;btn.textContent='查詢中…';const clean=()=>{delete window[cb];s.remove();btn.disabled=false;btn.textContent='查詢訂單'};window[cb]=(d)=>{try{if(d?.success&&d?.order){fillOrderQueryResult(d.order);clearQueryMessage()}else setQueryMessage(d?.message||'查無符合資料。')}finally{clean()}};s.src=`${GOOGLE_SHEET_ENDPOINT}?action=queryOrder&orderNumber=${encodeURIComponent(n)}&last5=${encodeURIComponent(l)}&callback=${encodeURIComponent(cb)}&_=${Date.now()}`;s.onerror=()=>{setQueryMessage('目前無法連線至查詢系統，請稍後再試。');clean()};document.body.appendChild(s)}\nfunction goPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='pageShop') loadHotSaleRanking();
@@ -856,12 +864,12 @@ const last5Input=document.getElementById('last5');
 phoneInput.addEventListener('input',()=>{
   phoneInput.value=phoneInput.value.replace(/\D/g,'').slice(0,10);
 });
-last5Input.addEventListener('input',()=>{
-  last5Input.value=last5Input.value.replace(/\D/g,'').slice(0,5);
-});
+last5Input.addEventListener('input',()=>{last5Input.value=last5Input.value.replace(/\D/g,'').slice(0,5);});
+const queryLast5Input=document.getElementById('queryLast5');queryLast5Input.addEventListener('input',()=>{queryLast5Input.value=queryLast5Input.value.replace(/\D/g,'').slice(0,5);});
 
 renderProducts();
 loadHotSaleRanking();
+if(new URLSearchParams(window.location.search).get('page')==='order-query'){goPage('pageOrderQuery');}
 </script>
 
 <footer class="site-footer">
