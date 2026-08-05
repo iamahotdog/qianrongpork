@@ -38,7 +38,7 @@ button{cursor:pointer}
 .welcome h1{margin:0 0 12px;font-size:30px;line-height:1.35}
 .welcome p{margin:0;line-height:1.9;color:var(--muted)}
 .guide-grid{display:grid;grid-template-columns:1fr;gap:14px}
-.guide-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;overflow:hidden}
+.guide-card{max-width:760px;width:100%;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;overflow:hidden}
 .guide-card h3{
   width:max-content;
   max-width:100%;
@@ -231,6 +231,7 @@ button{cursor:pointer}
   .wrap{padding:10px 10px 90px}
   .panel{padding:12px}
   .guide-grid{grid-template-columns:1fr}
+  .guide-card{max-width:none}
   .guide-card h3{font-size:19px;margin-bottom:10px}
   .guide-card img{max-height:none}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -282,21 +283,20 @@ button{cursor:pointer}
   border:1px solid #dfd3c3;
   border-radius:14px;
   background:#fffaf4;
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
   line-height:1.6;
   color:var(--muted);
   font-size:14px
 }
-.terms-box input{
+.terms-options{display:flex;flex-direction:column;gap:10px}
+.terms-option{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.terms-option input{
   flex:0 0 auto;
   width:18px;
   height:18px;
   margin-top:2px;
   accent-color:var(--olive)
 }
-.terms-box label{cursor:pointer}
+.terms-option span{min-width:0}
 .info-page-wrap{max-width:820px;margin:auto;padding:22px 14px 110px}
 .info-page-card{
   background:var(--paper);
@@ -406,10 +406,6 @@ button{cursor:pointer}
 
 .query-wrap{max-width:720px;margin:auto;padding:28px 14px 110px}.query-card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 8px 24px rgba(74,43,29,.05)}.query-card h1{margin:0 0 8px;font-size:30px}.query-card>p{margin:0 0 20px;color:var(--muted);line-height:1.8}.query-form{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}.query-form button{height:44px;white-space:nowrap}.query-result{display:none;margin-top:22px;border:1px solid #d9dfbf;border-radius:18px;background:#f4f6e9;padding:18px}.query-result.active{display:block}.query-result h2{margin:0 0 14px;font-size:22px}.query-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid rgba(143,144,96,.2)}.query-row:last-child{border-bottom:0}.query-row span{color:var(--muted)}.query-row strong{text-align:right}.query-message{display:none;margin-top:16px;padding:13px 14px;border-radius:14px;line-height:1.7}.query-message.show{display:block}.query-message.error{background:#fff3ef;border:1px solid #efc8bb;color:#8e3d2c}.query-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap}@media(max-width:760px){.query-wrap{padding:16px 10px 90px}.query-card{padding:20px 16px}.query-card h1{font-size:25px}.query-form{grid-template-columns:1fr}.query-form button{width:100%}.query-row{display:block}.query-row strong{display:block;text-align:left;margin-top:4px}}
 
-.remember-box{padding:12px 14px;border:1px solid #e2d6c7;border-radius:12px;background:#fffaf4}
-.remember-label{display:flex!important;align-items:center;gap:9px;margin:0!important;cursor:pointer}
-.remember-label input{flex:0 0 auto;width:18px;height:18px;accent-color:var(--olive)}
-.remember-label span{font-weight:800}
 
 </style>
 </head>
@@ -518,23 +514,19 @@ button{cursor:pointer}
               <option value="0">臺北市面交（免運）</option>
             </select>
           </div>
-          <div class="field full remember-box">
-            <label class="remember-label" for="rememberCustomerInfo">
-              <input id="rememberCustomerInfo" type="checkbox">
-              <span>在此裝置記住我的訂購與收件資料</span>
-            </label>
-            <div class="helper">下次使用同一台裝置與瀏覽器時自動帶入；不會記住匯款後五碼與備註。</div>
-          </div>
           <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="若同訂購人可填相同姓名"></div>
           <div class="field"><label>匯款帳號後五碼 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="last5" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required placeholder="請輸入5碼數字"></div>
           <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交者僅需填寫「面交」兩字"></textarea></div>
           <div class="field full"><label>備註</label><textarea id="note" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
         </div>
-        <div class="terms-box">
-          <input id="agreeFoodNotice" type="checkbox">
-          <label for="agreeFoodNotice">
-            我已閱讀並同意
-            <a class="info-link" href="#" onclick="openInfoPage('pageCheckout');return false;">食品保存、配送及生鮮商品退換貨說明</a>。
+        <div class="terms-box terms-options">
+          <label class="terms-option" for="agreeFoodNotice">
+            <input id="agreeFoodNotice" type="checkbox">
+            <span>我已閱讀並同意 <a class="info-link" href="#" onclick="openInfoPage('pageCheckout');return false;">食品保存、配送及生鮮商品退換貨說明</a>。</span>
+          </label>
+          <label class="terms-option" for="rememberCustomerInfo">
+            <input id="rememberCustomerInfo" type="checkbox">
+            <span>在此裝置記住我的收件資訊（下次使用同一裝置時自動帶入）</span>
           </label>
         </div>
         <div class="checkout-actions">
