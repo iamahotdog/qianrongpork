@@ -405,6 +405,12 @@ button{cursor:pointer}
 
 
 .query-wrap{max-width:720px;margin:auto;padding:28px 14px 110px}.query-card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 8px 24px rgba(74,43,29,.05)}.query-card h1{margin:0 0 8px;font-size:30px}.query-card>p{margin:0 0 20px;color:var(--muted);line-height:1.8}.query-form{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}.query-form button{height:44px;white-space:nowrap}.query-result{display:none;margin-top:22px;border:1px solid #d9dfbf;border-radius:18px;background:#f4f6e9;padding:18px}.query-result.active{display:block}.query-result h2{margin:0 0 14px;font-size:22px}.query-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid rgba(143,144,96,.2)}.query-row:last-child{border-bottom:0}.query-row span{color:var(--muted)}.query-row strong{text-align:right}.query-message{display:none;margin-top:16px;padding:13px 14px;border-radius:14px;line-height:1.7}.query-message.show{display:block}.query-message.error{background:#fff3ef;border:1px solid #efc8bb;color:#8e3d2c}.query-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap}@media(max-width:760px){.query-wrap{padding:16px 10px 90px}.query-card{padding:20px 16px}.query-card h1{font-size:25px}.query-form{grid-template-columns:1fr}.query-form button{width:100%}.query-row{display:block}.query-row strong{display:block;text-align:left;margin-top:4px}}
+
+.remember-box{padding:12px 14px;border:1px solid #e2d6c7;border-radius:12px;background:#fffaf4}
+.remember-label{display:flex!important;align-items:center;gap:9px;margin:0!important;cursor:pointer}
+.remember-label input{flex:0 0 auto;width:18px;height:18px;accent-color:var(--olive)}
+.remember-label span{font-weight:800}
+
 </style>
 </head>
 <body>
@@ -511,6 +517,13 @@ button{cursor:pointer}
               <option value="290">7-11冷凍宅配（290元）</option>
               <option value="0">臺北市面交（免運）</option>
             </select>
+          </div>
+          <div class="field full remember-box">
+            <label class="remember-label" for="rememberCustomerInfo">
+              <input id="rememberCustomerInfo" type="checkbox">
+              <span>在此裝置記住我的訂購與收件資料</span>
+            </label>
+            <div class="helper">下次使用同一台裝置與瀏覽器時自動帶入；不會記住匯款後五碼與備註。</div>
           </div>
           <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="若同訂購人可填相同姓名"></div>
           <div class="field"><label>匯款帳號後五碼 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="last5" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required placeholder="請輸入5碼數字"></div>
@@ -709,6 +722,47 @@ function closeInfoPage(){
 
 
 function setQueryMessage(message,type='error'){const b=document.getElementById('queryMessage');b.textContent=message;b.className=`query-message show ${type}`;}function clearQueryMessage(){const b=document.getElementById('queryMessage');b.textContent='';b.className='query-message';}function fillOrderQueryResult(o){document.getElementById('resultOrderNumber').textContent=o.orderNumber||'—';document.getElementById('resultItems').textContent=o.items||'—';document.getElementById('resultTotal').textContent=money(Number(o.totalAmount||0));document.getElementById('resultShipping').textContent=(o.shippingMethod||'—').replace(/（.*?）/g,'').trim();document.getElementById('resultOrderStatus').textContent=o.orderStatus||'已收到訂單';document.getElementById('resultPaymentStatus').textContent=o.paymentStatus||'待確認';document.getElementById('resultShippingStatus').textContent=o.shippingStatus||'尚未出貨';document.getElementById('queryResult').classList.add('active');}function queryOrder(){const n=document.getElementById('queryOrderNumber').value.trim().toUpperCase(),l=document.getElementById('queryLast5').value.trim(),btn=document.getElementById('queryOrderBtn');clearQueryMessage();document.getElementById('queryResult').classList.remove('active');if(!/^QR\d{14}$/.test(n)){setQueryMessage('請輸入正確的訂單編號，例如QR20260803170201。');return}if(!/^\d{5}$/.test(l)){setQueryMessage('匯款帳號後五碼請輸入5碼數字。');return}const cb=`qianrongOrderQuery_${Date.now()}`,s=document.createElement('script');btn.disabled=true;btn.textContent='查詢中…';const clean=()=>{delete window[cb];s.remove();btn.disabled=false;btn.textContent='查詢訂單'};window[cb]=(d)=>{try{if(d?.success&&d?.order){fillOrderQueryResult(d.order);clearQueryMessage()}else setQueryMessage(d?.message||'查無符合資料。')}finally{clean()}};s.src=`${GOOGLE_SHEET_ENDPOINT}?action=queryOrder&orderNumber=${encodeURIComponent(n)}&last5=${encodeURIComponent(l)}&callback=${encodeURIComponent(cb)}&_=${Date.now()}`;s.onerror=()=>{setQueryMessage('目前無法連線至查詢系統，請稍後再試。');clean()};document.body.appendChild(s)}
+const CUSTOMER_INFO_STORAGE_KEY='qianrongCustomerInfoV1';
+
+function loadRememberedCustomerInfo(){
+  try{
+    const raw=localStorage.getItem(CUSTOMER_INFO_STORAGE_KEY);
+    if(!raw) return;
+    const data=JSON.parse(raw);
+    ['buyerName','phone','receiverName','address'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el && typeof data[id]==='string') el.value=data[id];
+    });
+    const shipping=document.getElementById('shipping');
+    if(shipping && Number.isInteger(data.shippingIndex) && data.shippingIndex>=0 && data.shippingIndex<shipping.options.length){
+      shipping.selectedIndex=data.shippingIndex;
+    }
+    const remember=document.getElementById('rememberCustomerInfo');
+    if(remember) remember.checked=true;
+    updateCheckout();
+  }catch(error){
+    console.warn('無法讀取已記住的訂購資料。',error);
+  }
+}
+
+function saveOrClearCustomerInfo(){
+  const remember=document.getElementById('rememberCustomerInfo');
+  if(!remember) return;
+  if(!remember.checked){
+    localStorage.removeItem(CUSTOMER_INFO_STORAGE_KEY);
+    return;
+  }
+  const shipping=document.getElementById('shipping');
+  const data={
+    buyerName:document.getElementById('buyerName').value.trim(),
+    phone:document.getElementById('phone').value.trim(),
+    receiverName:document.getElementById('receiverName').value.trim(),
+    address:document.getElementById('address').value.trim(),
+    shippingIndex:shipping ? shipping.selectedIndex : 0
+  };
+  localStorage.setItem(CUSTOMER_INFO_STORAGE_KEY,JSON.stringify(data));
+}
+
 function goPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -887,6 +941,7 @@ ${itemLines}
 配送方式：${payload.shippingMethod.replace(/（.*?）/g,'').trim()}
 匯款後五碼：${payload.last5}`;
 
+    saveOrClearCustomerInfo();
     document.getElementById('successOrderNumber').textContent=orderNumber;
     document.getElementById('sendOrderToLineBtn').href=createLineOrderUrl(window.orderText);
     goPage('pageSuccess');
@@ -911,6 +966,12 @@ phoneInput.addEventListener('input',()=>{
 });
 last5Input.addEventListener('input',()=>{last5Input.value=last5Input.value.replace(/\D/g,'').slice(0,5);});
 const queryLast5Input=document.getElementById('queryLast5');queryLast5Input.addEventListener('input',()=>{queryLast5Input.value=queryLast5Input.value.replace(/\D/g,'').slice(0,5);});
+
+const rememberCustomerInfo=document.getElementById('rememberCustomerInfo');
+rememberCustomerInfo?.addEventListener('change',()=>{
+  if(!rememberCustomerInfo.checked) localStorage.removeItem(CUSTOMER_INFO_STORAGE_KEY);
+});
+loadRememberedCustomerInfo();
 
 renderProducts();
 loadHotSaleRanking();
