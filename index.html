@@ -30,7 +30,12 @@ button{cursor:pointer}
 .site-note{font-size:14px;color:var(--muted);letter-spacing:.04em}
 .page{display:none;min-height:100vh}
 .page.active{display:block}
+.hero{background:var(--cream)}
 .hero img{width:100%;height:auto}
+@media(min-width:761px){
+  .hero{padding:0 18px}
+  .hero img{max-width:1280px;margin:0 auto;border-radius:0 0 18px 18px}
+}
 .wrap{max-width:980px;margin:auto;padding:18px 14px 110px}
 .panel{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 8px 24px rgba(74,43,29,.05)}
 .welcome{margin-bottom:18px;background:linear-gradient(180deg,#fffdf9 0%,#fff8f0 100%);border:1px solid var(--line);border-radius:22px;padding:22px}
@@ -522,7 +527,7 @@ button{cursor:pointer}
         <div class="terms-box terms-options">
           <label class="terms-option" for="agreeFoodNotice">
             <input id="agreeFoodNotice" type="checkbox">
-            <span>我已閱讀並同意 <a class="info-link" href="#" onclick="openInfoPage('pageCheckout');return false;">食品保存、配送及生鮮商品退換貨說明</a>。</span>
+            <span>我已閱讀並同意 <a class="info-link" href="#" onclick="openInfoPage('pageCheckout');return false;">食品保存、配送、訂單修改及生鮮商品退換貨說明</a>。</span>
           </label>
           <label class="terms-option" for="rememberCustomerInfo">
             <input id="rememberCustomerInfo" type="checkbox">
@@ -572,7 +577,7 @@ button{cursor:pointer}
   <main class="info-page-wrap">
     <article class="info-page-card">
       <h1>食品保存與配送說明</h1>
-      <p class="info-intro">為維持肉品品質與食用安全，訂購前請詳閱以下說明。</p>
+      <p class="info-intro">為維持肉品品質與食用安全，並保障雙方權益，訂購前請詳閱以下說明。</p>
 
       <section class="info-section">
         <h2>一、商品說明</h2>
@@ -621,7 +626,34 @@ button{cursor:pointer}
       </section>
 
       <section class="info-section">
-        <h2>五、聯繫方式</h2>
+        <h2>五、訂單修改與取消</h2>
+        <p>訂單送出後即進入備貨及分切安排。為避免影響備貨作業，訂單成立後原則上不接受任意取消或修改品項、數量及配送資料。</p>
+        <p style="margin-top:8px">若確有修改需求，請於商品尚未備貨或出貨前儘速透過千容肉品官方LINE聯繫；是否能受理，將依實際備貨及出貨進度判斷。</p>
+        <p style="margin-top:8px">因商品缺貨、系統異常或其他可歸責於本店之情形，本店將主動聯繫並協助取消、修改或退款。</p>
+      </section>
+
+      <section class="info-section">
+        <h2>六、配送與商品外觀注意事項</h2>
+        <ul>
+          <li><strong>請確認收件資料正確：</strong>若因地址、電話或收件人資料填寫錯誤，造成配送延遲、無法聯繫或商品退回，重新配送費用可能由訂購人負擔。</li>
+          <li><strong>請留意配送及取貨通知：</strong>若因未及時收件、逾期取貨，或同意將商品放置於管理室、警衛室等非冷凍環境，導致商品解凍或品質受影響，本店將依實際情況協助處理，但無法保證提供退換貨。</li>
+          <li><strong>到貨時間以物流實際安排為準：</strong>本店無法保證指定日期或精確到貨時段；若遇交通、天候、物流量增加或物流業者作業異常，可能產生延遲。</li>
+          <li><strong>肉品採人工分切：</strong>每包重量可能存在合理範圍內的些微差異，實際重量以商品包裝標示或出貨規格為準。</li>
+          <li><strong>真空與肉色變化：</strong>真空包裝可能因運送產生皺摺或少量失真空；肉品在真空或低氧環境下可能出現色澤變深，接觸空氣後通常會逐漸恢復。是否可正常食用仍應依包裝完整度、氣味、保存溫度及實際品質綜合判斷。</li>
+        </ul>
+        <p style="margin-top:10px">收到商品如有明顯破損、異常解凍、滲漏、異味或其他品質疑慮，請保留商品、外箱與包裝，拍照記錄並儘速聯繫官方LINE。</p>
+      </section>
+
+      <section class="info-section">
+        <h2>七、購買確認</h2>
+        <div class="info-highlight">
+          下單即表示您已詳閱並同意本店之商品說明、保存方式、配送規範、訂單修改及退換貨說明。<br><br>
+          如對商品內容、保存方式或配送安排有任何疑問，請於送出訂單前透過千容肉品官方LINE與我們確認。
+        </div>
+      </section>
+
+      <section class="info-section">
+        <h2>八、聯繫方式</h2>
         <p>若對商品保存、配送或訂單內容有任何疑問，請透過千容肉品官方LINE聯繫。</p>
         <div class="info-highlight">
           <strong>LINE官方帳號：</strong>@011qisjt
@@ -876,7 +908,7 @@ async function submitOrder(){
 
   const agreeFoodNotice=document.getElementById('agreeFoodNotice');
   if(!agreeFoodNotice.checked){
-    alert('請先閱讀並勾選食品保存、配送及退換貨說明。');
+    alert('請先閱讀並勾選食品保存、配送、訂單修改及退換貨說明。');
     agreeFoodNotice.focus();
     return;
   }
