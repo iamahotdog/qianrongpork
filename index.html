@@ -26,7 +26,7 @@ button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 .site-nav{position:sticky;top:0;z-index:30;background:rgba(255,253,249,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .site-nav-inner{max-width:1180px;margin:auto;height:68px;padding:8px 18px;display:flex;align-items:center;justify-content:space-between}
-.site-logo{height:48px;width:auto;object-fit:contain}
+.site-logo-link{display:inline-flex;align-items:center;text-decoration:none;border-radius:10px}.site-logo-link:focus-visible{outline:3px solid rgba(143,144,96,.35);outline-offset:3px}.site-logo{height:48px;width:auto;object-fit:contain}
 .site-note{font-size:14px;color:var(--muted);letter-spacing:.04em}
 .page{display:none;min-height:100vh}
 .page.active{display:block}
@@ -119,7 +119,10 @@ button{cursor:pointer}
   letter-spacing:.04em
 }
 .card-body{padding:12px}
-.name{font-size:18px;font-weight:800}.meta{font-size:13px;color:var(--muted);margin-top:4px}
+.name-row{display:flex;align-items:baseline;gap:8px;min-width:0}
+.name{flex:0 0 auto;font-size:18px;font-weight:800}
+.name-note{min-width:0;color:var(--muted);font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:13px;color:var(--muted);margin-top:4px}
 .control{display:flex;align-items:center;justify-content:space-between;margin-top:12px;background:var(--soft);border-radius:12px;padding:7px}
 .control button{width:38px;height:38px;border:0;border-radius:10px;background:white;color:var(--brown);font-size:22px;font-weight:800}
 .qty-input{
@@ -240,7 +243,7 @@ button{cursor:pointer}
   .guide-card h3{font-size:19px;margin-bottom:10px}
   .guide-card img{max-height:none}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .card-body{padding:9px}.name{font-size:16px}.meta{font-size:12px}
+  .card-body{padding:9px}.name{font-size:16px}.name-note{font-size:10px}.meta{font-size:12px}
   .control button{width:34px;height:34px}.qty-input{width:56px;font-size:17px}
   .checkout-layout{grid-template-columns:1fr}
   .fields{grid-template-columns:1fr}
@@ -418,7 +421,7 @@ button{cursor:pointer}
 
 <nav class="site-nav">
   <div class="site-nav-inner">
-    <img class="site-logo" src="assets/logo-horizontal.png" alt="千容肉品">
+    <a class="site-logo-link" href="#" onclick="goPage('pageIntro');return false;" aria-label="返回千容肉品團購首頁"><img class="site-logo" src="assets/logo-horizontal.png" alt="千容肉品"></a>
     <div class="site-note">屏東東港・新鮮直送</div>
   </div>
 </nav>
@@ -646,10 +649,8 @@ button{cursor:pointer}
 
       <section class="info-section">
         <h2>七、購買確認</h2>
-        <div class="info-highlight">
-          下單即表示您已詳閱並同意本店之商品說明、保存方式、配送規範、訂單修改及退換貨說明。<br><br>
-          如對商品內容、保存方式或配送安排有任何疑問，請於送出訂單前透過千容肉品官方LINE與我們確認。
-        </div>
+        <p>下單即表示您已詳閱並同意本店之商品說明、保存方式、配送規範、訂單修改及退換貨說明。</p>
+        <p style="margin-top:8px">如對商品內容、保存方式或配送安排有任何疑問，請於送出訂單前透過千容肉品官方LINE與我們確認。</p>
       </section>
 
       <section class="info-section">
@@ -686,12 +687,12 @@ let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx72QKjh_PQpb4FlywC5m0PkzmoC4UuERCe4Ja4nR0MbP_evSRKw_5SLnLLZHSxPT6F/exec';
 const products = [
-  {name:'老鼠肉', img:'assets/老鼠肉.png'},
-  {name:'里肌肉', img:'assets/里肌肉.png'},
-  {name:'梅花肉', img:'assets/梅花肉.png'},
-  {name:'豬腳', img:'assets/豬腳.png'},
-  {name:'三層肉', img:'assets/三層肉.png'},
-  {name:'排骨', img:'assets/排骨.png'}
+  {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
+  {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
+  {name:'梅花肉', img:'assets/梅花肉.png', brief:'油花均勻・火鍋燒烤'},
+  {name:'豬腳', img:'assets/豬腳.png', brief:'膠質豐富・滷煮燉湯'},
+  {name:'三層肉', img:'assets/三層肉.png', brief:'肥瘦均衡・滷肉煎烤'},
+  {name:'排骨', img:'assets/排骨.png', brief:'肉香帶骨・煮湯紅燒'}
 ].map(p=>({...p,price:200,qty:0}));
 
 
@@ -810,7 +811,7 @@ function renderProducts(){
       ${hotSaleProducts.has(p.name) ? '<span class="hot-badge">熱銷</span>' : ''}
       <img src="${p.img}" alt="${p.name}">
       <div class="card-body">
-        <div class="name">${p.name}</div>
+        <div class="name-row"><div class="name">${p.name}</div><div class="name-note">${p.brief || ""}</div></div>
         <div class="meta">每包1斤｜200元</div>
         <div class="control">
           <button type="button" aria-label="減少${p.name}數量" onclick="changeQty(${i},-1)">−</button>
