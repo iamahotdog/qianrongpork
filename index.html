@@ -574,6 +574,27 @@ body.modal-open{overflow:hidden}
 .hero img{content-visibility:auto}
 .guide-slide-frame img{content-visibility:auto}
 
+
+.line-account-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.line-copy-btn{
+  flex:0 0 auto;
+  border:1px solid var(--olive);
+  background:#fff;
+  color:var(--olive);
+  border-radius:10px;
+  padding:7px 14px;
+  font:inherit;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.line-copy-btn:active{transform:translateY(1px)}
+
 </style>
 </head>
 <body>
@@ -825,8 +846,9 @@ body.modal-open{overflow:hidden}
       <section class="info-section">
         <h2>八、聯繫方式</h2>
         <p>若對商品保存、配送或訂單內容有任何疑問，請透過千容肉品官方LINE聯繫。</p>
-        <div class="info-highlight">
-          <strong>LINE官方帳號：</strong>@011qisjt
+        <div class="info-highlight line-account-row">
+          <span><strong>LINE官方帳號：</strong>@011qisjt</span>
+          <button class="line-copy-btn" type="button" onclick="copyLineOfficialAccount(this)">複製</button>
         </div>
       </section>
 
@@ -880,7 +902,7 @@ let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwt8FXcEe8A6aqBL2SPTZWDfOyqpLtll97M7MfEnA_VIwIdmTaKfLomotsOIYSW--9q/exec';
 const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
-const REQUIRED_BACKEND_VERSION = 'v42.3';
+const REQUIRED_BACKEND_VERSION = 'v43';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -888,8 +910,62 @@ const products = [
   {name:'豬腳', img:'assets/豬腳.png', brief:'膠質豐富・滷煮燉湯'},
   {name:'三層肉', img:'assets/三層肉.png', brief:'肥瘦均衡・滷肉煎烤'},
   {name:'排骨', img:'assets/排骨.png', brief:'肉香帶骨・煮湯紅燒'}
-].map(p=>({...p,price:200,qty:0}));
+].map(p=>({
+  ...p,
+  price:200,
+  qty:0,
+  active:true,
+  stock:null,
+  maxQty:20
+}));
 
+
+function applyProductCatalog(data){
+  const catalog=Array.isArray(data?.products) ? data.products : [];
+  const map=new Map(catalog.map(item=>[item.name,item]));
+
+  products.forEach(p=>{
+    const item=map.get(p.name);
+    if(!item) return;
+
+    p.price=Number(item.price)||p.price;
+    p.active=item.active!==false;
+    p.stock=(item.stock===null || item.stock==='' || item.stock===undefined)
+      ? null
+      : Math.max(0,Number(item.stock)||0);
+    p.maxQty=Math.max(1,Number(item.maxQty)||20);
+
+    // 若庫存或單次上限縮小，避免畫面保留超額數量
+    const hardMax=Math.min(
+      p.maxQty,
+      p.stock===null ? p.maxQty : p.stock
+    );
+    if(p.qty>hardMax) p.qty=hardMax;
+  });
+
+  renderProducts();
+}
+
+function loadProductCatalog(){
+  const callbackName=`qianrongCatalog_${Date.now()}`;
+  const script=document.createElement('script');
+  const cleanup=()=>{
+    delete window[callbackName];
+    script.remove();
+  };
+
+  window[callbackName]=(data)=>{
+    try{
+      if(data?.success) applyProductCatalog(data);
+    }finally{
+      cleanup();
+    }
+  };
+
+  script.src=`${GOOGLE_SHEET_ENDPOINT}?action=catalog&callback=${encodeURIComponent(callbackName)}&_=${Date.now()}`;
+  script.onerror=cleanup;
+  document.body.appendChild(script);
+}
 
 function applyHotSaleRanking(data){
   const rankings=Array.isArray(data?.rankings) ? data.rankings : [];
@@ -924,6 +1000,30 @@ function loadHotSaleRanking(){
 }
 
 
+
+async function copyLineOfficialAccount(button){
+  const text='@011qisjt';
+  try{
+    await navigator.clipboard.writeText(text);
+    const original=button?.textContent||'複製';
+    if(button){
+      button.textContent='已複製';
+      setTimeout(()=>button.textContent=original,1200);
+    }
+  }catch(_){
+    const input=document.createElement('input');
+    input.value=text;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    input.remove();
+    if(button){
+      const original=button.textContent;
+      button.textContent='已複製';
+      setTimeout(()=>button.textContent=original,1200);
+    }
+  }
+}
 
 function scrollInfoToBottom(){
   document.getElementById('infoPageBottom')?.scrollIntoView({
@@ -1179,15 +1279,30 @@ function createLineOrderUrl(message){
 function goodsTotal(){return products.reduce((s,p)=>s+p.qty*p.price,0)}
 function countTotal(){return products.reduce((s,p)=>s+p.qty,0)}
 function renderProducts(){
-  document.getElementById('products').innerHTML=products.map((p,i)=>`
-    <article class="card">
-      ${hotSaleProducts.has(p.name) ? '<span class="hot-badge">熱銷</span>' : ''}
+  document.getElementById('products').innerHTML=products.map((p,i)=>{
+    const soldOut=!p.active || p.stock===0;
+    const controlledStock=p.stock!==null;
+    const availableMax=Math.max(
+      0,
+      Math.min(
+        Number(p.maxQty)||20,
+        controlledStock ? Number(p.stock)||0 : Number(p.maxQty)||20
+      )
+    );
+    const meta=soldOut
+      ? `每包1斤｜${money(p.price)}｜售罄`
+      : `每包1斤｜${money(p.price)}`;
+
+    return `
+    <article class="card ${soldOut?'sold-out':''}">
+      ${hotSaleProducts.has(p.name) && !soldOut ? '<span class="hot-badge">熱銷</span>' : ''}
+      ${soldOut ? '<span class="hot-badge">售罄</span>' : ''}
       <img src="${p.img}" alt="${p.name}">
       <div class="card-body">
         <div class="name-row"><div class="name">${p.name}</div><div class="name-note">${p.brief || ""}</div></div>
-        <div class="meta">每包1斤｜200元</div>
+        <div class="meta">${meta}</div>
         <div class="control">
-          <button type="button" aria-label="減少${p.name}數量" onclick="changeQty(${i},-1)">−</button>
+          <button type="button" aria-label="減少${p.name}數量" onclick="changeQty(${i},-1)" ${soldOut?'disabled':''}>−</button>
           <input
             class="qty-input"
             type="text"
@@ -1196,44 +1311,82 @@ function renderProducts(){
             maxlength="2"
             aria-label="${p.name}訂購包數"
             value="${p.qty}"
+            data-max="${availableMax}"
+            ${soldOut?'disabled':''}
             onfocus="this.select()"
             oninput="inputQty(${i},this)"
             onblur="finishQtyInput(${i},this)"
           >
-          <button type="button" aria-label="增加${p.name}數量" onclick="changeQty(${i},1)">＋</button>
+          <button type="button" aria-label="增加${p.name}數量" onclick="changeQty(${i},1)" ${soldOut?'disabled':''}>＋</button>
         </div>
       </div>
-    </article>`).join('');
+    </article>`;
+  }).join('');
   updateShopSummary();
 }
 function updateShopSummary(){
   document.getElementById('countText').textContent=`共${countTotal()}包`;
   document.getElementById('goodsText').textContent=money(goodsTotal());
 }
+function getProductAllowedMax(p){
+  const maxQty=Math.max(1,Number(p?.maxQty)||20);
+  if(p?.stock===null || p?.stock===undefined) return maxQty;
+  return Math.max(0,Math.min(maxQty,Number(p.stock)||0));
+}
+
+function showLargeOrderMessage(p){
+  alert(`${p.name}單一商品最多可訂購${p.maxQty||20}包，如有大量訂購需求，請先私訊千容肉品官方LINE聊聊後再協助處理。`);
+}
+
 function changeQty(i,d){
   const p=products[i];
-  if(!p) return;
+  if(!p || !p.active || p.stock===0) return;
 
+  const allowedMax=getProductAllowedMax(p);
   const nextQty=Math.max(0,(Number(p.qty)||0)+Number(d||0));
 
-  if(nextQty>MAX_QTY_PER_PRODUCT){
-    alert('單一商品最多可訂購20包，如有大量訂購需求，請先私訊千容肉品官方LINE與我們聊聊後再協助處理。');
+  if(nextQty>allowedMax){
+    if(p.stock!==null && Number(p.stock)<Number(p.maxQty||20)){
+      alert(`${p.name}目前庫存剩餘${p.stock}包，請調整訂購數量。`);
+    }else{
+      showLargeOrderMessage(p);
+    }
     return;
   }
 
   p.qty=nextQty;
   renderProducts();
-  updateShopSummary();
 }
+
 function inputQty(i,input){
+  const p=products[i];
+  if(!p) return;
+
   const digits=input.value.replace(/\D/g,'').slice(0,2);
-  input.value=digits;
-  products[i].qty=digits==='' ? 0 : Math.max(0,Math.min(20,Number(digits)));
+  const allowedMax=getProductAllowedMax(p);
+  const value=digits==='' ? 0 : Number(digits);
+
+  if(value>allowedMax){
+    input.value=String(allowedMax);
+    p.qty=allowedMax;
+    if(p.stock!==null && Number(p.stock)<Number(p.maxQty||20)){
+      alert(`${p.name}目前庫存剩餘${p.stock}包，已調整為可訂購數量。`);
+    }else{
+      showLargeOrderMessage(p);
+    }
+  }else{
+    input.value=digits;
+    p.qty=value;
+  }
   updateShopSummary();
 }
+
 function finishQtyInput(i,input){
-  products[i].qty=Math.max(0,Math.min(20,Number(input.value)||0));
-  input.value=String(products[i].qty);
+  const p=products[i];
+  if(!p) return;
+  const allowedMax=getProductAllowedMax(p);
+  p.qty=Math.max(0,Math.min(allowedMax,Number(input.value)||0));
+  input.value=String(p.qty);
   updateShopSummary();
 }
 function shippingFee(){
@@ -1251,7 +1404,7 @@ function updateCheckout(){
   document.getElementById('itemList').innerHTML=chosen.map(p=>`
     <div class="line-item">
       <img src="${p.img}" alt="${p.name}">
-      <div class="item-main"><strong>${p.name}</strong><small>${p.qty}包 × 200元</small></div>
+      <div class="item-main"><strong>${p.name}</strong><small>${p.qty}包 × ${money(p.price)}</small></div>
       <div class="item-price">${money(p.qty*p.price)}</div>
     </div>`).join('');
   const goods=goodsTotal(), ship=shippingFee(), total=goods+ship;
@@ -1559,6 +1712,7 @@ guideImage?.addEventListener('touchend',event=>{
 loadRememberedCustomerInfo();
 
 renderProducts();
+loadProductCatalog();
 loadHotSaleRanking();
 if(new URLSearchParams(window.location.search).get('page')==='order-query'){goPage('pageOrderQuery');}
 </script>
