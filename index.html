@@ -721,13 +721,13 @@ body.modal-open{overflow:hidden}
     <section class="success-card">
       <div class="success-icon">✓</div>
       <h1>感謝您的訂購</h1>
-      <p>訂單資料已送出。<br>訂單編號會在背景完成確認後自動顯示，再將訂單內容傳送至千容肉品官方LINE，以利後續對帳與聯繫。</p>
+      <p>訂單資料已送出。<br>系統正在建立訂單編號，完成後會自動顯示，再將訂單內容傳送至千容肉品官方LINE。</p>
       <div class="success-order-no">
         訂單編號
         <strong id="successOrderNumber">—</strong>
       </div>
       <div class="success-actions">
-        <button class="primary" onclick="copyOrder()">複製訂單內容</button>
+        <button id="copyOrderBtn" class="primary" onclick="copyOrder()">複製訂單內容</button>
         <a id="sendOrderToLineBtn" class="secondary" href="https://lin.ee/rvNiERx" target="_blank" rel="noopener">前往LINE傳送訂單</a>
       </div>
       <div class="intro-info-link">
@@ -1293,26 +1293,67 @@ async function verifyBackendVersion(){
     return false;
   }
 }
+function wait(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
 async function confirmOrderInBackground(requestId,payload,chosen){
-  try{
-    const result=await jsonpRequest({action:'confirmOrder',requestId},7000);
-    if(!(result?.success && result?.order)) return;
-    const confirmed=result.order;
-    const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\\n');
-    window.orderText=`【千容肉品訂單】
+  // Google Sheet / Apps Script 寫入完成時間偶爾比前端快轉成功頁慢一些。
+  // 背景重試不阻塞使用者，也不顯示技術性警告。
+  const retryDelays=[700,1200,2000,3500,5000];
+
+  for(let attempt=0; attempt<retryDelays.length; attempt++){
+    try{
+      await wait(retryDelays[attempt]);
+
+      const result=await jsonpRequest(
+        {action:'confirmOrder',requestId},
+        10000
+      );
+
+      if(result?.success && result?.order){
+        const confirmed=result.order;
+        const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\n');
+
+        window.orderText=`【千容肉品訂單】
 訂單編號：${confirmed.orderNumber}
 商品
 ${itemLines}
 應付總額：${money(Number(confirmed.totalAmount||0))}
 配送方式：${String(confirmed.shippingMethod||'').replace(/（.*?）/g,'').trim()}
 匯款後五碼：${payload.last5}`;
-    clearPendingOrderRequest(requestId);
-    document.getElementById('successOrderNumber').textContent=confirmed.orderNumber;
-    document.getElementById('sendOrderToLineBtn').href=createLineOrderUrl(window.orderText);
-  }catch(error){
-    console.warn('背景確認訂單未完成：',error);
+
+        clearPendingOrderRequest(requestId);
+
+        const orderNo=document.getElementById('successOrderNumber');
+        if(orderNo) orderNo.textContent=confirmed.orderNumber;
+
+        const lineBtn=document.getElementById('sendOrderToLineBtn');
+        if(lineBtn) lineBtn.href=createLineOrderUrl(window.orderText);
+
+        const copyBtn=document.getElementById('copyOrderBtn');
+        if(copyBtn) copyBtn.disabled=false;
+
+        return true;
+      }
+
+      // pending 代表後臺尚未完成寫入，繼續下一次背景確認。
+      if(result?.status !== 'pending'){
+        console.warn('訂單背景確認回傳非 pending 狀態：',result);
+      }
+    }catch(error){
+      console.warn(`背景確認訂單第 ${attempt+1} 次未完成：`,error);
+    }
   }
+
+  // 背景確認逾時也不打擾客人；保留 LINE 聯繫入口。
+  const orderNo=document.getElementById('successOrderNumber');
+  if(orderNo && orderNo.textContent==='建立中…'){
+    orderNo.textContent='已送出';
+  }
+  return false;
 }
+
 async function submitOrder(){
   const required=[
     ['buyerName','請填寫訂購人姓名'],
@@ -1409,6 +1450,8 @@ async function submitOrder(){
     window.orderText='【千容肉品訂單】\n訂單資料已送出，系統正在建立訂單編號。';
     document.getElementById('successOrderNumber').textContent='建立中…';
     document.getElementById('sendOrderToLineBtn').href='https://lin.ee/rvNiERx';
+    const copyBtn=document.getElementById('copyOrderBtn');
+    if(copyBtn) copyBtn.disabled=true;
     saveOrClearCustomerInfo();
     goPage('pageSuccess');
 
