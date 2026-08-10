@@ -691,6 +691,7 @@ body.modal-open{overflow:hidden}
             </label>
           </div>
           <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="請輸入收件人姓名"></div>
+          <div class="field"><label>收件人電話 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverPhone" type="tel" inputmode="numeric" autocomplete="shipping tel" maxlength="10" pattern="09[0-9]{8}" required placeholder="09xx-xxx-xxx"></div>
           <div class="field"><label>匯款帳號後五碼 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="last5" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required placeholder="請輸入5碼數字"></div>
           <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交者僅需填寫「面交」兩字"></textarea></div>
           <div class="field full"><label>備註</label><textarea id="note" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
@@ -878,7 +879,7 @@ let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwt8FXcEe8A6aqBL2SPTZWDfOyqpLtll97M7MfEnA_VIwIdmTaKfLomotsOIYSW--9q/exec';
 const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
-const REQUIRED_BACKEND_VERSION = 'v41';
+const REQUIRED_BACKEND_VERSION = 'v41.2';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -1096,7 +1097,7 @@ function loadRememberedCustomerInfo(){
     const raw=localStorage.getItem(CUSTOMER_INFO_STORAGE_KEY);
     if(!raw) return;
     const data=JSON.parse(raw);
-    ['buyerName','phone','receiverName','address'].forEach(id=>{
+    ['buyerName','phone','receiverName','receiverPhone','address'].forEach(id=>{
       const el=document.getElementById(id);
       if(el && typeof data[id]==='string') el.value=data[id];
     });
@@ -1129,6 +1130,7 @@ function saveOrClearCustomerInfo(){
     buyerName:document.getElementById('buyerName').value.trim(),
     phone:document.getElementById('phone').value.trim(),
     receiverName:document.getElementById('receiverName').value.trim(),
+    receiverPhone:document.getElementById('receiverPhone').value.trim(),
     address:document.getElementById('address').value.trim(),
     shippingIndex:shipping ? shipping.selectedIndex : 0,
     sameAsBuyer:Boolean(document.getElementById('sameAsBuyer')?.checked)
@@ -1139,15 +1141,22 @@ function saveOrClearCustomerInfo(){
 function syncReceiverWithBuyer(){
   const same=document.getElementById('sameAsBuyer');
   const buyer=document.getElementById('buyerName');
+  const buyerPhone=document.getElementById('phone');
   const receiver=document.getElementById('receiverName');
-  if(!same || !buyer || !receiver) return;
+  const receiverPhone=document.getElementById('receiverPhone');
+  if(!same || !buyer || !buyerPhone || !receiver || !receiverPhone) return;
   if(same.checked){
     receiver.value=buyer.value.trim();
+    receiverPhone.value=buyerPhone.value.trim();
     receiver.readOnly=true;
+    receiverPhone.readOnly=true;
     receiver.setAttribute('aria-readonly','true');
+    receiverPhone.setAttribute('aria-readonly','true');
   }else{
     receiver.readOnly=false;
+    receiverPhone.readOnly=false;
     receiver.removeAttribute('aria-readonly');
+    receiverPhone.removeAttribute('aria-readonly');
   }
 }
 
@@ -1276,7 +1285,7 @@ function clearPendingOrderRequest(requestId){
 }
 async function verifyBackendVersion(){
   try{
-    const result=await jsonpRequest({action:'health'},3500);
+    const result=await jsonpRequest({action:'health'},10000);
     if(result?.success && result?.version===REQUIRED_BACKEND_VERSION) return true;
     throw new Error(`後端版本不符：${result?.version||'unknown'}`);
   }catch(error){
@@ -1309,6 +1318,7 @@ async function submitOrder(){
     ['buyerName','請填寫訂購人姓名'],
     ['phone','請填寫聯絡電話'],
     ['receiverName','請填寫收件人姓名'],
+    ['receiverPhone','請填寫收件人電話'],
     ['address','請填寫收件地址'],
     ['last5','請填寫匯款帳號後五碼']
   ];
@@ -1326,6 +1336,13 @@ async function submitOrder(){
   if(!/^09\d{8}$/.test(phone.value)){
     alert('聯絡電話請輸入09開頭的10碼手機號碼。');
     phone.focus();
+    return;
+  }
+
+  const receiverPhone=document.getElementById('receiverPhone');
+  if(!/^09\d{8}$/.test(receiverPhone.value)){
+    alert('收件人電話請輸入09開頭的10碼手機號碼。');
+    receiverPhone.focus();
     return;
   }
 
@@ -1353,16 +1370,9 @@ async function submitOrder(){
   const submitBtn=document.getElementById('submitOrderBtn');
   const originalText=submitBtn.textContent;
   submitBtn.disabled=true;
-  submitBtn.textContent='檢查系統版本中…';
+  submitBtn.textContent='訂單確認中…';
 
   try{
-    // 先確認 Apps Script 已部署為相容版本，避免新版前端誤送到舊版後端造成欄位錯置。
-    const backendReady=await verifyBackendVersion();
-    if(!backendReady){
-      alert('目前後端版本不符合 V41，為避免訂單資料寫入錯誤，本次不會送出訂單。請確認 Google Apps Script 已部署為 V41 後再試。');
-      return;
-    }
-
     const shipping=document.getElementById('shipping');
     const shippingCodes=['blackcat','seven_eleven','taipei_meetup'];
     const shipText=shipping.selectedOptions[0].text;
@@ -1379,6 +1389,7 @@ async function submitOrder(){
       phone:phone.value.trim(),
       shippingCode:shippingCodes[shipping.selectedIndex]||'blackcat',
       receiverName:document.getElementById('receiverName').value.trim(),
+      receiverPhone:document.getElementById('receiverPhone').value.trim(),
       address:document.getElementById('address').value.trim(),
       items:itemsDetailed,
       last5:last5.value.trim(),
@@ -1425,11 +1436,18 @@ buyerNameInput?.addEventListener('input',()=>{
 });
 
 const phoneInput=document.getElementById('phone');
+phoneInput?.addEventListener('input',()=>{
+  phoneInput.value=phoneInput.value.replace(/\D/g,'').slice(0,10);
+  if(sameAsBuyerInput?.checked) syncReceiverWithBuyer();
+});
+
+const receiverPhoneInput=document.getElementById('receiverPhone');
+receiverPhoneInput?.addEventListener('input',()=>{
+  receiverPhoneInput.value=receiverPhoneInput.value.replace(/\D/g,'').slice(0,10);
+});
+
 const last5Input=document.getElementById('last5');
 
-phoneInput.addEventListener('input',()=>{
-  phoneInput.value=phoneInput.value.replace(/\D/g,'').slice(0,10);
-});
 last5Input.addEventListener('input',()=>{last5Input.value=last5Input.value.replace(/\D/g,'').slice(0,5);});
 const queryLast5Input=document.getElementById('queryLast5');queryLast5Input.addEventListener('input',()=>{queryLast5Input.value=queryLast5Input.value.replace(/\D/g,'').slice(0,5);});
 
