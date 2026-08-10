@@ -721,7 +721,7 @@ body.modal-open{overflow:hidden}
     <section class="success-card">
       <div class="success-icon">✓</div>
       <h1>感謝您的訂購</h1>
-      <p>訂單資料已送出。<br>訂單編號已建立。系統會在背景確認正式金額，完成後即可複製完整訂單內容並傳送至千容肉品官方LINE。</p>
+      <p>感謝您的訂購。<br><span id="successConfirmStatus">訂單資料已送出，正在確認訂單內容…</span></p>
       <div class="success-order-no">
         訂單編號
         <strong id="successOrderNumber">—</strong>
@@ -1319,22 +1319,23 @@ function wait(ms){
 }
 
 async function confirmOrderInBackground(requestId,payload,chosen){
-  // 訂單編號已在送單當下產生並顯示；背景確認只補正式總額與 LINE 內容。
-  const retryDelays=[800,1800,3500];
+  // POST 已完成後才開始確認，因此先立即查一次；必要時再短暫重試。
+  const retryDelays=[0,600,1400,2600];
 
   for(let attempt=0; attempt<retryDelays.length; attempt++){
     try{
-      await wait(retryDelays[attempt]);
+      if(retryDelays[attempt]>0) await wait(retryDelays[attempt]);
 
       const result=await jsonpRequest(
         {action:'confirmOrder',requestId},
-        10000
+        8000
       );
 
       if(result?.success && result?.order){
         const confirmed=result.order;
         const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\n');
 
+        // 恢復原本定稿的 LINE 精簡訂單格式。
         window.orderText=`【千容肉品訂單】
 訂單編號：${confirmed.orderNumber || payload.orderNumber}
 商品
@@ -1346,13 +1347,19 @@ ${itemLines}
         clearPendingOrderRequest(requestId);
 
         const lineBtn=document.getElementById('sendOrderToLineBtn');
-        if(lineBtn) lineBtn.href=createLineOrderUrl(window.orderText);
+        if(lineBtn){
+          lineBtn.href=createLineOrderUrl(window.orderText);
+          lineBtn.textContent='前往LINE傳送訂單';
+        }
 
         const copyBtn=document.getElementById('copyOrderBtn');
         if(copyBtn){
           copyBtn.disabled=false;
           copyBtn.textContent='複製訂單內容';
         }
+
+        const status=document.getElementById('successConfirmStatus');
+        if(status) status.textContent='訂單已完成確認，可複製內容傳送至官方LINE。';
 
         return true;
       }
@@ -1361,16 +1368,27 @@ ${itemLines}
     }
   }
 
-  // 不改掉正式訂單編號，也不顯示「已送出」等模糊文字。
-  const copyBtn=document.getElementById('copyOrderBtn');
-  if(copyBtn){
-    copyBtn.disabled=false;
-    copyBtn.textContent='複製訂單編號';
-  }
-  window.orderText=`【千容肉品訂單】
-訂單編號：${payload.orderNumber}
-訂單資料已送出，正式金額請以千容肉品確認為準。`;
+  // 不產生任何「正式金額請以...」之類的替代訂單文字。
+  // 保留真正訂單編號，訂單內容按鈕維持停用，避免傳出未經後端驗算的金額。
+  const status=document.getElementById('successConfirmStatus');
+  if(status) status.textContent='訂單已送出，系統仍在確認訂單內容。';
+
   return false;
+}
+
+function sendOrderInBackground(payload,chosen){
+  return fetch(GOOGLE_SHEET_ENDPOINT,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(payload)
+  })
+  .then(()=>confirmOrderInBackground(payload.requestId,payload,chosen))
+  .catch(error=>{
+    console.error('訂單背景送出失敗：',error);
+    const status=document.getElementById('successConfirmStatus');
+    if(status) status.textContent='訂單送出時發生異常，請透過官方LINE與我們確認。';
+  });
 }
 
 async function submitOrder(){
@@ -1458,22 +1476,15 @@ async function submitOrder(){
     };
     payload.requestId=getOrCreateRequestId(payload);
 
-    submitBtn.textContent='訂單送出中…';
-    await fetch(GOOGLE_SHEET_ENDPOINT,{
-      method:'POST',
-      mode:'no-cors',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify(payload)
-    });
-
-    // 不再卡住使用者等待 Google Sheet 輪詢。
-    // 先進成功頁；訂單編號與正式總額以 Apps Script 後端驗算結果為準，背景確認後自動更新。
-    window.orderText=`【千容肉品訂單】
-訂單編號：${payload.orderNumber}
-訂單資料已送出，系統正在確認正式金額。`;
-
+    // 成功頁立即顯示，不等待 Apps Script / Google Sheet 完成。
+    window.orderText='';
     document.getElementById('successOrderNumber').textContent=payload.orderNumber;
-    document.getElementById('sendOrderToLineBtn').href='https://lin.ee/rvNiERx';
+
+    const lineBtn=document.getElementById('sendOrderToLineBtn');
+    if(lineBtn){
+      lineBtn.href='https://lin.ee/rvNiERx';
+      lineBtn.textContent='前往LINE';
+    }
 
     const copyBtn=document.getElementById('copyOrderBtn');
     if(copyBtn){
@@ -1481,10 +1492,14 @@ async function submitOrder(){
       copyBtn.textContent='訂單確認中…';
     }
 
+    const status=document.getElementById('successConfirmStatus');
+    if(status) status.textContent='訂單資料已送出，正在確認訂單內容…';
+
     saveOrClearCustomerInfo();
     goPage('pageSuccess');
 
-    confirmOrderInBackground(payload.requestId,payload,chosen);
+    // 背景送出，不阻塞成功頁。
+    sendOrderInBackground(payload,chosen);
   }catch(error){
     console.error(error);
     alert('目前無法送出訂單，請稍後再試一次；若持續發生，請聯繫千容肉品官方LINE。');
@@ -1494,8 +1509,16 @@ async function submitOrder(){
   }
 }
 async function copyOrder(){
-  try{await navigator.clipboard.writeText(window.orderText);alert('訂單內容已複製，可貼到官方LINE。')}
-  catch(e){prompt('請複製以下訂單內容：',window.orderText)}
+  if(!window.orderText){
+    alert('訂單內容仍在確認中，請稍候一下。');
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(window.orderText);
+    alert('訂單內容已複製，可貼到官方LINE。');
+  }catch(e){
+    prompt('請複製以下訂單內容：',window.orderText);
+  }
 }
 
 const buyerNameInput=document.getElementById('buyerName');
