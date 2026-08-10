@@ -875,11 +875,12 @@ body.modal-open{overflow:hidden}
 <script>
 const LINE_OA_ID = '@011qisjt';
 const HOT_SALE_MIN_QTY = 5;
+const MAX_QTY_PER_PRODUCT = 20;
 let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwt8FXcEe8A6aqBL2SPTZWDfOyqpLtll97M7MfEnA_VIwIdmTaKfLomotsOIYSW--9q/exec';
 const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
-const REQUIRED_BACKEND_VERSION = 'v42.2';
+const REQUIRED_BACKEND_VERSION = 'v42.3';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -1210,8 +1211,19 @@ function updateShopSummary(){
   document.getElementById('goodsText').textContent=money(goodsTotal());
 }
 function changeQty(i,d){
-  products[i].qty=Math.max(0,Math.min(20,products[i].qty+d));
+  const p=products[i];
+  if(!p) return;
+
+  const nextQty=Math.max(0,(Number(p.qty)||0)+Number(d||0));
+
+  if(nextQty>MAX_QTY_PER_PRODUCT){
+    alert('單一商品最多可訂購20包，如有大量訂購需求，請先私訊千容肉品官方LINE與我們聊聊後再協助處理。');
+    return;
+  }
+
+  p.qty=nextQty;
   renderProducts();
+  updateShopSummary();
 }
 function inputQty(i,input){
   const digits=input.value.replace(/\D/g,'').slice(0,2);
