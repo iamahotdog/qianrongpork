@@ -721,7 +721,7 @@ body.modal-open{overflow:hidden}
     <section class="success-card">
       <div class="success-icon">✓</div>
       <h1>感謝您的訂購</h1>
-      <p>感謝您的訂購。<br><span id="successConfirmStatus">訂單資料已送出，正在確認訂單內容…</span></p>
+      <p>感謝您的訂購。<br><span id="successConfirmStatus">訂單已送出，正在完成確認…</span></p>
       <div class="success-order-no">
         訂單編號
         <strong id="successOrderNumber">—</strong>
@@ -879,7 +879,7 @@ let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwt8FXcEe8A6aqBL2SPTZWDfOyqpLtll97M7MfEnA_VIwIdmTaKfLomotsOIYSW--9q/exec';
 const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
-const REQUIRED_BACKEND_VERSION = 'v41.8';
+const REQUIRED_BACKEND_VERSION = 'v42';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -1319,8 +1319,8 @@ function wait(ms){
 }
 
 async function confirmOrderInBackground(requestId,payload,chosen){
-  // POST 已完成後才開始確認，因此先立即查一次；必要時再短暫重試。
-  const retryDelays=[0,600,1400,2600];
+  // V42：POST 完成後，正常情況直接命中 Apps Script Cache。
+  const retryDelays=[0,500];
 
   for(let attempt=0; attempt<retryDelays.length; attempt++){
     try{
@@ -1328,14 +1328,13 @@ async function confirmOrderInBackground(requestId,payload,chosen){
 
       const result=await jsonpRequest(
         {action:'confirmOrder',requestId},
-        8000
+        5000
       );
 
       if(result?.success && result?.order){
         const confirmed=result.order;
         const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\n');
 
-        // 恢復原本定稿的 LINE 精簡訂單格式。
         window.orderText=`【千容肉品訂單】
 訂單編號：${confirmed.orderNumber || payload.orderNumber}
 商品
@@ -1359,7 +1358,7 @@ ${itemLines}
         }
 
         const status=document.getElementById('successConfirmStatus');
-        if(status) status.textContent='訂單已完成確認，可複製內容傳送至官方LINE。';
+        if(status) status.textContent='訂單已確認，可複製內容傳送至官方LINE。';
 
         return true;
       }
@@ -1368,10 +1367,8 @@ ${itemLines}
     }
   }
 
-  // 不產生任何「正式金額請以...」之類的替代訂單文字。
-  // 保留真正訂單編號，訂單內容按鈕維持停用，避免傳出未經後端驗算的金額。
   const status=document.getElementById('successConfirmStatus');
-  if(status) status.textContent='訂單已送出，系統仍在確認訂單內容。';
+  if(status) status.textContent='訂單已送出，若按鈕尚未啟用請稍候片刻。';
 
   return false;
 }
@@ -1493,7 +1490,7 @@ async function submitOrder(){
     }
 
     const status=document.getElementById('successConfirmStatus');
-    if(status) status.textContent='訂單資料已送出，正在確認訂單內容…';
+    if(status) status.textContent='訂單已送出，正在完成確認…';
 
     saveOrClearCustomerInfo();
     goPage('pageSuccess');
