@@ -1,72 +1,87 @@
-千容肉品 v44｜壓力測試環境
+千容肉品 v44.1｜縮短 Lock 高併發優化
 
-目的
-----
-測試目前「GitHub Pages + Apps Script + Google Sheet」在多人同時下單時的穩定度。
-
-安全設計
+本次目的
 --------
-1. 測試訂單只寫入「壓力測試」工作表。
-2. 不寫入正式訂單表。
-3. 不扣除「商品管理」正式庫存。
-4. 使用 Script Properties 的隨機 Token 保護測試入口。
-5. 測試仍使用正式商品管理表與正式後端驗價邏輯。
-6. 測試仍使用 Script Lock，因此可以觀察目前架構在尖峰寫入時的瓶頸。
+針對 V44 baseline：
+- 10 筆近同時送單
+- backendSuccess：5/10
+- writtenRows：5
+- P50：5078ms
+- P95：9298ms
+- batchElapsed：13874ms
 
-會自動建立
-----------
-- 壓力測試
-- 壓力測試摘要
+主要問題是 Script Lock 區段過大。
 
-第一次使用
-----------
-1. Apps Script 更新為 v44 並儲存。
-2. 管理部署作業 → 編輯原本正式 Deployment → 新版本 → 部署。
-3. 確認 health 回傳 version: v44。
-4. 在 Apps Script 函式選單執行：
-   setupStressTestEnvironment
+V44.1 正式訂單優化
+------------------
+Lock 外先完成：
+1. requestId Cache 檢查
+2. 商品主檔 Cache 讀取
+3. 表單格式驗證
+4. 商品驗證
+5. 初步驗價
 
-建議測試順序
-------------
-請不要一開始就跑 100。
+Lock 內只保留：
+1. 防重複 Sheet 最終檢查
+2. 只讀本次商品的最新 B:E 設定
+3. 最後確認售價 / 上下架 / 單次上限 / 庫存
+4. 只扣本次有控庫存的商品
+5. 寫入正式訂單
 
-依序執行：
-1. stressTest10
-2. 查看「壓力測試摘要」
-3. stressTest30
-4. 查看摘要
-5. stressTest50
-6. 如果前面都穩定，再跑 stressTest100
+寫完立即 releaseLock。
 
-摘要欄位
---------
-- 目標並發數：這次想同時送出的訂單數。
-- HTTP回應數：實際取得的 HTTP response 數。
-- 後端成功數：後端回傳 success=true 的數量。
-- 寫入筆數：實際進入「壓力測試」Sheet 的數量。
-- 重複requestId：理論上應為 0。
-- P50：一半請求在此時間內完成。
-- P95：95% 請求在此時間內完成，這是主要觀察指標。
-- 最大處理時間：最慢的一筆。
-- 整批耗時：整個 fetchAll 批次完成時間。
+Lock 外再做：
+1. 訂單 Cache
+2. 熱銷 Cache 失效
+3. 商品 Catalog Cache 失效
 
-目前判讀規則
-------------
-- 全部成功且 P95 <= 2500ms：穩定
-- 全部成功且 P95 2501~5000ms：可用但需觀察
-- 全部成功但 P95 > 5000ms：成功但偏慢
-- 寫入筆數或後端成功數不足：有漏單/失敗
+重要：
+正式訂單仍以 Lock 當下的商品管理表最新售價及庫存為準，
+沒有為了速度犧牲後端驗價與庫存正確性。
 
-測完後
-------
-可執行：
+V44.1 壓力測試優化
+------------------
+舊 V44 壓測在 Lock 內：
+- 讀商品管理
+- 驗價
+- 掃壓力測試表找 requestId
+- 寫入
+
+V44.1 改成：
+Lock 外：
+- 商品讀取
+- 驗證
+- 驗價
+- requestId Cache
+
+Lock 內：
+- 只寫一列「壓力測試」
+
+因此可以直接比較 Lock 區段縮短後的改善幅度。
+
+另外新增 failureReasons：
+若仍有失敗，執行記錄會直接告訴你是：
+- Lock timeout
+- 商品設定問題
+- response 問題
+等，不需要再猜。
+
+部署與測試順序
+--------------
+1. 更新 Apps Script 為 v44.1。
+2. 管理部署作業 → 編輯既有 deployment → 新版本 → 部署。
+3. health 確認 version: v44.1。
+4. setupStressTestEnvironment 不必重建也可以，已有工作表會沿用。
+5. 直接執行 stressTest10。
+6. 把新的 JSON 結果與「壓力測試摘要」新一列拿來和 baseline 比較。
+
+先不要跑 30。
+只有當新一輪 10 筆達到：
+- backendSuccess = 10
+- writtenRows = 10
+且 P95 明顯下降
+再進 stressTest30。
+
+清資料：
 clearStressTestData
-
-只會清除「壓力測試」明細，
-「壓力測試摘要」會保留，方便比較 10／30／50／100 的結果。
-
-注意
-----
-這個測試是從 Apps Script 使用 UrlFetchApp.fetchAll 對正式 Web App endpoint
-進行近似並發請求。它非常適合找出 Apps Script / Lock / Sheet 的瓶頸，
-但不等於專業雲端壓測平台的完整網路層模擬。
+只清明細，不刪摘要。
