@@ -1384,7 +1384,6 @@ async function submitOrder(){
     const payload={
       // V41：前端只告訴後端「誰買、買什麼、怎麼配送」。
       // 商品價格、商品小計、運費、總金額一律不傳，由 Apps Script 自行判定。
-      requestId:getOrCreatePendingOrderRequest(itemsDetailed,shippingCode),
       buyerName:document.getElementById('buyerName').value.trim(),
       phone:phone.value.trim(),
       shippingCode:shippingCodes[shipping.selectedIndex]||'blackcat',
@@ -1416,7 +1415,7 @@ async function submitOrder(){
     confirmOrderInBackground(payload.requestId,payload,chosen);
   }catch(error){
     console.error(error);
-    alert('目前無法送出訂單，請確認網路連線後再試一次。');
+    alert('目前無法送出訂單，請稍後再試一次；若持續發生，請聯繫千容肉品官方LINE。');
   }finally{
     submitBtn.disabled=false;
     submitBtn.textContent=originalText;

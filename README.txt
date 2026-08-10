@@ -1,33 +1,20 @@
-千容肉品訂購 Web App v41.2｜收件人電話與下單流程優化
+千容肉品訂購 Web App v41.3｜修正送單 ReferenceError
 
-本次調整：
-1. 新增「收件人電話」必填欄位。
-2. 勾選「收件人同訂購人」時：
-   - 收件人姓名自動同步訂購人姓名。
-   - 收件人電話自動同步聯絡電話。
-   - 訂購人姓名或電話變更時會同步更新。
-3. 取消勾選後，收件人姓名與電話可自行修改。
-4. 若選擇記住收件資訊，會一併記住收件人電話及「收件人同訂購人」設定。
-5. 下單按鈕不再顯示「檢查系統版本中…」，改為「訂單確認中…」。
-6. 移除每次下單前阻塞式 Apps Script 版本檢查：
-   - 不再因 Apps Script 冷啟動超過 3.5 秒而誤判版本不符。
-   - 客人不再看到 V41、後端版本等技術訊息。
-7. V41 後端商品、價格、運費驗證仍完整保留。
-8. Apps Script 新增「收件人電話」欄位；既有 Google Sheet 欄位不搬動，缺少時會新增在右側，避免舊資料錯位。
-9. Backend version 更新為 v41.2，health action 仍保留供管理者測試。
+本次修正：
+1. 修正送出訂單時的 JavaScript 錯誤：
+   getOrCreatePendingOrderRequest is not defined
+2. 移除不存在的舊函式呼叫。
+3. requestId 改為只使用既有且正確的：
+   getOrCreateRequestId(payload)
+4. 修正錯誤提示文字，不再把所有前端程式錯誤誤稱為「網路連線問題」。
+5. 保留 v41.2 的所有功能：
+   - 收件人電話
+   - 收件人同訂購人姓名＋電話同步
+   - 後端商品／價格／運費驗證
+   - 防重複 requestId
+   - Google Sheet 寫入
+   - 訂單查詢、熱銷排行、LINE
 
-部署：
-A. 先更新 Google Apps Script
-   - 貼入 v41.2 程式碼
-   - 部署 → 管理部署作業
-   - 編輯目前正式部署 AKfycbwt8FXc...
-   - 選「新版本」並部署
-   - 不要新增另一個部署，正式 /exec URL 維持不變
-
-B. 再更新 GitHub Pages 的 index.html
-
-測試：
-- health 應回傳 version: v41.2
-- 勾選「收件人同訂購人」後，姓名與電話應同步。
-- 正常送單後，Google Sheet 應新增收件人電話。
-- 下單時按鈕只顯示「訂單確認中…」，不應再出現版本不符警告。
+部署方式：
+- 本版只需要更新 GitHub Pages 的 index.html。
+- Google Apps Script v41.2 不需修改、不需重新部署。
