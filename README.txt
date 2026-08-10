@@ -1,87 +1,131 @@
-千容肉品 v44.2｜接收與寫入分離
+千容肉品 v44.3｜Sheets API Append 高併發版
 
-目的
-----
-V44.1 已將 P95 從 9298ms 降到 6905ms，但 10 筆並發仍只有 6/10 成功，
-4 筆失敗原因皆為 Lock timeout。
+為什麼做這版
+------------
+V44.2：
+- backendSuccess = 8/10
+- writtenRows = 6/10
+- P95 = 7300ms
+- Lock timeout = 2
 
-V44.2 進一步把 Google Sheet 寫入移出 Script Lock。
+代表把 Sheet 寫入移出 Lock 的方向是對的，
+但使用 getLastRow()+1 仍可能讓多個執行競爭同一列。
 
-新架構
-------
+V44.3 核心改動
+--------------
+正式訂單與壓力測試都不再使用：
+
+getLastRow()+1
+→ setValues()
+
+改成直接呼叫 Google Sheets API：
+
+spreadsheets.values.append
+
+由 Google Sheets API 決定真正的追加位置。
+
+實作方式
+--------
+使用：
+- UrlFetchApp.fetch
+- ScriptApp.getOAuthToken()
+- Google Sheets API v4 values:append
+
+所以不需要額外啟用 Apps Script Advanced Sheets Service。
+
+正式訂單流程
+------------
 Lock 外：
-- 表單驗證
+- requestId Cache
 - 商品主檔讀取
+- 表單驗證
 - 後端驗價
-
-極短 Lock：
-- 同 requestId reservation（避免同一訂單同時重送）
-- 只有「有控庫存」時才做最新庫存確認與扣庫存
-- 沒有設定庫存的商品，不做庫存 Lock 工作
-
-立即 releaseLock
-
-Lock 外：
-- 寫 Google Sheet 正式訂單
-- 寫 Cache
-- 清熱銷 Cache / 商品 Cache
-
-壓力測試則更簡化：
-
-Lock 外：
-- 驗證、驗價
-
-極短 Lock：
 - requestId reservation
 
+只有商品有啟用庫存管理時：
+短 Script Lock
+- 最後確認價格 / 上下架 / 上限 / 庫存
+- 扣庫存
 releaseLock
 
 Lock 外：
-- 寫「壓力測試」工作表
+- Google Sheets API append 正式訂單
+- 確認 updatedRows = 1
+- 寫 Cache
+- 清 reservation
 
-這一版測的是：
-「把共享鎖從包住 Google Sheet 寫入，改成只保護真正需要互斥的狀態」後，
-同時下單能力能否明顯提升。
+若庫存已扣但 append 失敗：
+- 重新取得 Lock
+- 回滾庫存
 
-安全性
-------
-1. requestId 仍有短期 reservation 防同時重送。
-2. 正式訂單成功後仍寫入正式 Cache。
-3. 有控庫存的商品仍會在 Lock 內做最後庫存確認。
-4. 若扣庫存後正式訂單寫入失敗，會重新取得 Lock 回滾庫存。
-5. 後端價格仍以商品管理表為準。
+壓力測試流程
+------------
+壓力測試 requestId 每筆都是唯一值，因此 V44.3 壓測 handler 不再使用 Script Lock。
 
-已知取捨
+流程：
+驗證
+→ reservation
+→ Sheets API append
+→ 檢查 updatedRows = 1
+→ 回傳 success
+
+這可以真正測出 Google Sheets API append 在近同時寫入時的表現。
+
+版本比較
 --------
-Google Sheet 的實際資料列寫入現在不再包 Script Lock。
-這是為了避免每張訂單因 Sheet I/O 互相排隊。
+V44：
+5/10 成功
+5/10 寫入
+P95 9298ms
 
-訂單編號使用高熵隨機尾碼，requestId 亦為 UUID 類型，
-因此正常使用下碰撞機率極低；正式防重送主要由 requestId reservation + Cache 處理。
+V44.1：
+6/10 成功
+6/10 寫入
+P95 6905ms
+
+V44.2：
+8/10 success
+6/10 實際寫入
+P95 7300ms
+問題：success 與實際落單不一致
+
+V44.3 目標：
+- backendSuccess = 10
+- writtenRows = 10
+- duplicateCount = 0
+- failureReasons = {}
+- P95 盡量 < 2500ms
 
 部署
 ----
-1. Apps Script 更新為 v44.2。
-2. 管理部署作業 → 編輯既有 deployment → 新版本 → 部署。
-3. GitHub Pages index.html 更新為 v44.2。
-4. health 確認 version: v44.2。
+1. 更新 Apps Script 為 v44.3。
+2. 儲存。
+3. 管理部署作業 → 編輯既有 Deployment → 新版本 → 部署。
+4. 更新 GitHub Pages index.html。
+5. health 確認 version: v44.3。
 
-測試順序
---------
+第一次執行時
+------------
+因為 V44.3 透過 UrlFetchApp 呼叫 Google Sheets API，
+Apps Script 可能會要求重新授權。
+若跳出授權畫面，請完成授權。
+
+測試
+----
 先只跑：
 stressTest10
 
-與前兩版比較：
-V44：
-5/10，P95 9298ms
-
-V44.1：
-6/10，P95 6905ms，Lock timeout 4
-
-V44.2 目標：
-10/10
+只有確認：
+backendSuccess = 10
 writtenRows = 10
-duplicateCount = 0
-P95 盡量 < 2500ms
 
-只有 10/10 成功後，再跑 stressTest30。
+才進：
+stressTest30
+
+注意
+----
+壓力測試仍只寫：
+- 壓力測試
+- 壓力測試摘要
+
+不寫正式訂單、不扣正式庫存。
