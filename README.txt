@@ -1,131 +1,103 @@
-千容肉品 v44.3｜Sheets API Append 高併發版
+千容肉品 v44.4｜429 自動重試最終穩定版
 
-為什麼做這版
-------------
-V44.2：
-- backendSuccess = 8/10
-- writtenRows = 6/10
-- P95 = 7300ms
-- Lock timeout = 2
+定位
+----
+這版作為目前 Google Sheet 架構的最後一次可靠性調整。
 
-代表把 Sheet 寫入移出 Lock 的方向是對的，
-但使用 getLastRow()+1 仍可能讓多個執行競爭同一列。
+V44.3 實測：
+- 10 人：10/10
+- 30 人：30/30
+- 50 人：50/50
+- 100 人：61/100
+- 100 人失敗 39 筆皆為 Google Sheets API HTTP 429 quota exceeded
 
-V44.3 核心改動
---------------
-正式訂單與壓力測試都不再使用：
+因此 V44.4 不再重構架構，只處理 API 尖峰配額。
 
-getLastRow()+1
-→ setValues()
-
-改成直接呼叫 Google Sheets API：
-
-spreadsheets.values.append
-
-由 Google Sheets API 決定真正的追加位置。
-
-實作方式
+核心改動
 --------
-使用：
-- UrlFetchApp.fetch
-- ScriptApp.getOAuthToken()
-- Google Sheets API v4 values:append
+Sheets API values.append 若遇到：
+- HTTP 429
+- HTTP 500
+- HTTP 502
+- HTTP 503
+- HTTP 504
 
-所以不需要額外啟用 Apps Script Advanced Sheets Service。
+不會立即失敗，而是自動重試。
 
-正式訂單流程
-------------
-Lock 外：
-- requestId Cache
-- 商品主檔讀取
-- 表單驗證
-- 後端驗價
-- requestId reservation
+等待策略：
+第 1 次失敗 → 約 1 秒
+第 2 次 → 約 2 秒
+第 3 次 → 約 4 秒
+第 4 次 → 約 8 秒
+第 5 次 → 約 15 秒
+第 6 次 → 約 15 秒
 
-只有商品有啟用庫存管理時：
-短 Script Lock
-- 最後確認價格 / 上下架 / 上限 / 庫存
-- 扣庫存
-releaseLock
+每次另外加入 0~750ms 隨機 jitter，
+避免 30、50、100 個 request 同時醒來後再次一起撞 quota。
 
-Lock 外：
-- Google Sheets API append 正式訂單
-- 確認 updatedRows = 1
-- 寫 Cache
-- 清 reservation
+最多：
+7 次嘗試（初次 + 最多 6 次重試）
 
-若庫存已扣但 append 失敗：
-- 重新取得 Lock
-- 回滾庫存
-
-壓力測試流程
-------------
-壓力測試 requestId 每筆都是唯一值，因此 V44.3 壓測 handler 不再使用 Script Lock。
-
-流程：
-驗證
-→ reservation
-→ Sheets API append
-→ 檢查 updatedRows = 1
-→ 回傳 success
-
-這可以真正測出 Google Sheets API append 在近同時寫入時的表現。
-
-版本比較
+設計原則
 --------
-V44：
-5/10 成功
-5/10 寫入
-P95 9298ms
+「慢可以，漏單不可以。」
 
-V44.1：
-6/10 成功
-6/10 寫入
-P95 6905ms
+正常尖峰：
+10 / 30 / 50 筆仍走原本快速 append。
 
-V44.2：
-8/10 success
-6/10 實際寫入
-P95 7300ms
-問題：success 與實際落單不一致
+只有真正撞到 Sheets API quota 或暫時性 5xx 時，
+該筆訂單才會進入等待重試。
 
-V44.3 目標：
-- backendSuccess = 10
-- writtenRows = 10
-- duplicateCount = 0
-- failureReasons = {}
-- P95 盡量 < 2500ms
+使用者前端仍是零等待成功頁，
+所以極端尖峰時主要影響：
+- 後臺 Sheet 晚一點看到訂單
+而不是：
+- 客人卡在成功頁等待
+
+壓測新增指標
+------------
+執行記錄 JSON 會多：
+- totalRetryCount：所有 request 總共重試幾次
+- requestsWithRetry：有發生重試的 request 數
+- maxRetryCount：單一 request 最多重試幾次
+
+例如：
+"backendSuccess": 100,
+"writtenRows": 100,
+"requestsWithRetry": 39,
+"totalRetryCount": 78,
+"maxRetryCount": 3,
+"failureReasons": {}
+
+就表示 100 筆最後全部成功，其中 39 筆曾碰到 quota / 暫時性錯誤。
 
 部署
 ----
-1. 更新 Apps Script 為 v44.3。
+1. Apps Script 更新 v44.4。
 2. 儲存。
 3. 管理部署作業 → 編輯既有 Deployment → 新版本 → 部署。
-4. 更新 GitHub Pages index.html。
-5. health 確認 version: v44.3。
+4. GitHub Pages index.html 更新 v44.4。
+5. health 確認 version: v44.4。
 
-第一次執行時
-------------
-因為 V44.3 透過 UrlFetchApp 呼叫 Google Sheets API，
-Apps Script 可能會要求重新授權。
-若跳出授權畫面，請完成授權。
+最後壓測
+--------
+建議只需再跑：
+stressTest100
 
-測試
-----
-先只跑：
-stressTest10
+因為 V44.3 已經證明：
+10 / 30 / 50 全部零漏單。
 
-只有確認：
-backendSuccess = 10
-writtenRows = 10
+如果 100 人仍因 quota 有少數失敗，
+也不建議再繼續增加 Google Sheet 架構複雜度。
 
-才進：
-stressTest30
+目前實際團購情境以：
+「50 筆近同時送單可 100% 寫入」
+已可作為主要容量基準。
 
-注意
-----
-壓力測試仍只寫：
-- 壓力測試
-- 壓力測試摘要
-
-不寫正式訂單、不扣正式庫存。
+之後建議停止可靠性重構，
+轉往營運功能：
+- 訂單管理
+- 庫存警示
+- 銷售統計
+- 商品排行
+- 每日/每團營收
