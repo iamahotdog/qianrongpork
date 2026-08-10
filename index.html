@@ -595,6 +595,19 @@ body.modal-open{overflow:hidden}
 }
 .line-copy-btn:active{transform:translateY(1px)}
 
+
+/* V46：機器人 Honeypot。正常使用者不可見、不可聚焦。 */
+.security-hp-field{
+  position:absolute !important;
+  left:-10000px !important;
+  top:auto !important;
+  width:1px !important;
+  height:1px !important;
+  overflow:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -696,7 +709,7 @@ body.modal-open{overflow:hidden}
       <section class="form-card">
         <h2>訂購人／收件資料</h2>
         <div class="fields">
-          <div class="field"><label>訂購人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="buyerName" required autocomplete="name" placeholder="請輸入姓名"></div>
+          <div class="field"><label>訂購人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="buyerName" maxlength="30" required autocomplete="name" placeholder="請輸入姓名"></div>
           <div class="field"><label>聯絡電話 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="09[0-9]{8}" required placeholder="09xx-xxx-xxx"></div>
           <div class="field full"><label>配送方式</label>
             <select id="shipping" onchange="updateCheckout()">
@@ -711,11 +724,11 @@ body.modal-open{overflow:hidden}
               <span>收件人同訂購人</span>
             </label>
           </div>
-          <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="請輸入收件人姓名"></div>
+          <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" maxlength="30" required autocomplete="shipping name" placeholder="請輸入收件人姓名"></div>
           <div class="field"><label>收件人電話 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverPhone" type="tel" inputmode="numeric" autocomplete="shipping tel" maxlength="10" pattern="09[0-9]{8}" required placeholder="09xx-xxx-xxx"></div>
           <div class="field"><label>匯款帳號後五碼 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="last5" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required placeholder="請輸入5碼數字"></div>
-          <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交者僅需填寫「面交」兩字"></textarea></div>
-          <div class="field full"><label>備註</label><textarea id="note" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
+          <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" maxlength="160" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交者僅需填寫「面交」兩字"></textarea></div>
+          <div class="field full"><label>備註</label><textarea id="note" maxlength="300" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
         </div>
         <div class="terms-box terms-options">
           <label class="terms-option" for="agreeFoodNotice">
@@ -726,6 +739,17 @@ body.modal-open{overflow:hidden}
             <input id="rememberCustomerInfo" type="checkbox">
             <span>在此裝置記住我的收件資訊（下次使用同一裝置時自動帶入）</span>
           </label>
+        </div>
+        <div class="security-hp-field" aria-hidden="true">
+          <label for="website">網站</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabindex="-1"
+            autocomplete="off"
+            inputmode="none"
+          >
         </div>
         <div class="checkout-actions">
           <button class="secondary" onclick="goPage('pageShop')">返回選購</button>
@@ -902,7 +926,7 @@ let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwt8FXcEe8A6aqBL2SPTZWDfOyqpLtll97M7MfEnA_VIwIdmTaKfLomotsOIYSW--9q/exec';
 const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
-const REQUIRED_BACKEND_VERSION = 'v45';
+const REQUIRED_BACKEND_VERSION = 'v46';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -1611,7 +1635,9 @@ async function submitOrder(){
       address:document.getElementById('address').value.trim(),
       items:itemsDetailed,
       last5:last5.value.trim(),
-      note:document.getElementById('note').value.trim()
+      note:document.getElementById('note').value.trim(),
+      // V46：Honeypot。正常使用者永遠是空字串。
+      website:document.getElementById('website')?.value.trim()||''
     };
     payload.requestId=getOrCreateRequestId(payload);
 
