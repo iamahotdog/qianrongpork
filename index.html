@@ -172,6 +172,26 @@ button{cursor:pointer}
 .field input,.field textarea,.field select{width:100%;padding:11px 12px;border:1px solid #d8c8b4;border-radius:10px;background:#fffdf9;font-size:15px;outline:none}
 .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--olive);box-shadow:0 0 0 3px rgba(143,144,96,.12)}
 .field textarea{min-height:74px;resize:vertical}
+.same-buyer-row{
+  grid-column:1/-1;
+  margin-top:-2px;
+  padding:2px 0 2px;
+}
+.same-buyer-option{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  color:var(--brown);
+  font-size:14px;
+  font-weight:700;
+}
+.same-buyer-option input{
+  width:18px;
+  height:18px;
+  margin:0;
+  accent-color:var(--olive);
+}
 .helper{font-size:12px;color:var(--muted);margin-top:5px}
 .checkout-actions{display:flex;gap:10px;margin-top:16px}
 .checkout-actions button{flex:1}
@@ -664,7 +684,13 @@ body.modal-open{overflow:hidden}
               <option value="0">臺北市面交（免運）</option>
             </select>
           </div>
-          <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="若同訂購人可填相同姓名"></div>
+          <div class="same-buyer-row">
+            <label class="same-buyer-option" for="sameAsBuyer">
+              <input id="sameAsBuyer" type="checkbox">
+              <span>收件人同訂購人</span>
+            </label>
+          </div>
+          <div class="field"><label>收件人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="receiverName" required autocomplete="shipping name" placeholder="請輸入收件人姓名"></div>
           <div class="field"><label>匯款帳號後五碼 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="last5" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" required placeholder="請輸入5碼數字"></div>
           <div class="field full"><label>收件地址 <span aria-hidden="true" style="color:#c94836">*</span></label><textarea id="address" required autocomplete="shipping street-address" placeholder="請填寫完整地址；面交者僅需填寫「面交」兩字"></textarea></div>
           <div class="field full"><label>備註</label><textarea id="note" placeholder="例如：希望到貨時段、其他需求"></textarea></div>
@@ -694,7 +720,7 @@ body.modal-open{overflow:hidden}
     <section class="success-card">
       <div class="success-icon">✓</div>
       <h1>感謝您的訂購</h1>
-      <p>訂單已成功送出並完成紀錄。<br>請複製訂單內容後傳送至千容肉品官方LINE，以利後續對帳、確認訂單及聯繫。</p>
+      <p>訂單資料已送出。<br>訂單編號會在背景完成確認後自動顯示，再將訂單內容傳送至千容肉品官方LINE，以利後續對帳與聯繫。</p>
       <div class="success-order-no">
         訂單編號
         <strong id="successOrderNumber">—</strong>
@@ -850,10 +876,9 @@ const LINE_OA_ID = '@011qisjt';
 const HOT_SALE_MIN_QTY = 5;
 let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
-const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx72QKjh_PQpb4FlywC5m0PkzmoC4UuERCe4Ja4nR0MbP_evSRKw_5SLnLLZHSxPT6F/exec';
-const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV40';
-const ORDER_CONFIRM_MAX_ATTEMPTS = 8;
-const ORDER_CONFIRM_DELAY_MS = 650;
+const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzjcFE_MhK-6H8LjXmw6-ZWwVWPzLl1XTZuZiVxA3WdNAfkPDbnhNoom9pq5P5vI4me/exec';
+const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
+const REQUIRED_BACKEND_VERSION = 'v40.2';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -1079,6 +1104,11 @@ function loadRememberedCustomerInfo(){
     if(shipping && Number.isInteger(data.shippingIndex) && data.shippingIndex>=0 && data.shippingIndex<shipping.options.length){
       shipping.selectedIndex=data.shippingIndex;
     }
+    const sameAsBuyer=document.getElementById('sameAsBuyer');
+    if(sameAsBuyer && data.sameAsBuyer===true){
+      sameAsBuyer.checked=true;
+      syncReceiverWithBuyer();
+    }
     const remember=document.getElementById('rememberCustomerInfo');
     if(remember) remember.checked=true;
     updateCheckout();
@@ -1100,9 +1130,25 @@ function saveOrClearCustomerInfo(){
     phone:document.getElementById('phone').value.trim(),
     receiverName:document.getElementById('receiverName').value.trim(),
     address:document.getElementById('address').value.trim(),
-    shippingIndex:shipping ? shipping.selectedIndex : 0
+    shippingIndex:shipping ? shipping.selectedIndex : 0,
+    sameAsBuyer:Boolean(document.getElementById('sameAsBuyer')?.checked)
   };
   localStorage.setItem(CUSTOMER_INFO_STORAGE_KEY,JSON.stringify(data));
+}
+
+function syncReceiverWithBuyer(){
+  const same=document.getElementById('sameAsBuyer');
+  const buyer=document.getElementById('buyerName');
+  const receiver=document.getElementById('receiverName');
+  if(!same || !buyer || !receiver) return;
+  if(same.checked){
+    receiver.value=buyer.value.trim();
+    receiver.readOnly=true;
+    receiver.setAttribute('aria-readonly','true');
+  }else{
+    receiver.readOnly=false;
+    receiver.removeAttribute('aria-readonly');
+  }
 }
 
 function goPage(id){
@@ -1228,19 +1274,35 @@ function clearPendingOrderRequest(requestId){
     if(!saved || saved.requestId===requestId) sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY);
   }catch(_){ }
 }
-function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-async function confirmOrderWritten(requestId){
-  for(let attempt=1;attempt<=ORDER_CONFIRM_MAX_ATTEMPTS;attempt++){
-    try{
-      const result=await jsonpRequest({action:'confirmOrder',requestId},7000);
-      if(result?.success && result?.order) return result.order;
-      if(result?.status && result.status!=='pending') throw new Error(result.message||'訂單確認失敗');
-    }catch(error){
-      if(attempt===ORDER_CONFIRM_MAX_ATTEMPTS) throw error;
-    }
-    await sleep(ORDER_CONFIRM_DELAY_MS*attempt);
+async function verifyBackendVersion(){
+  try{
+    const result=await jsonpRequest({action:'health'},3500);
+    if(result?.success && result?.version===REQUIRED_BACKEND_VERSION) return true;
+    throw new Error(`後端版本不符：${result?.version||'unknown'}`);
+  }catch(error){
+    console.error('Backend version check failed:',error);
+    return false;
   }
-  throw new Error('訂單尚未完成確認');
+}
+async function confirmOrderInBackground(requestId,payload,chosen){
+  try{
+    const result=await jsonpRequest({action:'confirmOrder',requestId},7000);
+    if(!(result?.success && result?.order)) return;
+    const confirmed=result.order;
+    const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\\n');
+    window.orderText=`【千容肉品訂單】
+訂單編號：${confirmed.orderNumber}
+商品
+${itemLines}
+應付總額：${money(Number(confirmed.totalAmount||0))}
+配送方式：${String(confirmed.shippingMethod||'').replace(/（.*?）/g,'').trim()}
+匯款後五碼：${payload.last5}`;
+    clearPendingOrderRequest(requestId);
+    document.getElementById('successOrderNumber').textContent=confirmed.orderNumber;
+    document.getElementById('sendOrderToLineBtn').href=createLineOrderUrl(window.orderText);
+  }catch(error){
+    console.warn('背景確認訂單未完成：',error);
+  }
 }
 async function submitOrder(){
   const required=[
@@ -1288,26 +1350,51 @@ async function submitOrder(){
     return;
   }
 
-  const shipping=document.getElementById('shipping');
-  const shippingCodes=['blackcat','seven_eleven','taipei_meetup'];
-  const payload={
-    buyerName:document.getElementById('buyerName').value.trim(),
-    phone:phone.value.trim(),
-    shippingCode:shippingCodes[shipping.selectedIndex]||'blackcat',
-    receiverName:document.getElementById('receiverName').value.trim(),
-    address:document.getElementById('address').value.trim(),
-    items:chosen.map(p=>({name:p.name,qty:p.qty})),
-    last5:last5.value.trim(),
-    note:document.getElementById('note').value.trim()
-  };
-  payload.requestId=getOrCreateRequestId(payload);
-
   const submitBtn=document.getElementById('submitOrderBtn');
   const originalText=submitBtn.textContent;
   submitBtn.disabled=true;
-  submitBtn.textContent='訂單寫入中…';
+  submitBtn.textContent='檢查系統版本中…';
 
   try{
+    // 先確認 Apps Script 已部署為相容版本，避免新版前端誤送到舊版後端造成欄位錯置。
+    const backendReady=await verifyBackendVersion();
+    if(!backendReady){
+      alert('目前後端仍是舊版本，為避免訂單資料寫入錯誤，本次不會送出訂單。請先重新部署 Google Apps Script v40.1 後再試。');
+      return;
+    }
+
+    const shipping=document.getElementById('shipping');
+    const shippingCodes=['blackcat','seven_eleven','taipei_meetup'];
+    const shipText=shipping.selectedOptions[0].text;
+    const goods=goodsTotal();
+    const ship=shippingFee();
+    const total=goods+ship;
+    const itemsDetailed=chosen.map(p=>({name:p.name,qty:p.qty}));
+    const itemsText=chosen.map(p=>`${p.name} × ${p.qty}包`).join('、');
+
+    const payload={
+      // 新版後端欄位
+      buyerName:document.getElementById('buyerName').value.trim(),
+      phone:phone.value.trim(),
+      shippingCode:shippingCodes[shipping.selectedIndex]||'blackcat',
+      receiverName:document.getElementById('receiverName').value.trim(),
+      address:document.getElementById('address').value.trim(),
+      itemsDetailed,
+      last5:last5.value.trim(),
+      note:document.getElementById('note').value.trim(),
+
+      // 保留舊版格式作為相容資料；v40.1 後端不信任這些金額，仍會自行驗算。
+      orderNumber:createOrderNumber(),
+      shippingMethod:shipText,
+      items:itemsText,
+      totalQty:countTotal(),
+      goodsAmount:goods,
+      shippingFee:ship,
+      totalAmount:total
+    };
+    payload.requestId=getOrCreateRequestId(payload);
+
+    submitBtn.textContent='訂單送出中…';
     await fetch(GOOGLE_SHEET_ENDPOINT,{
       method:'POST',
       mode:'no-cors',
@@ -1315,25 +1402,18 @@ async function submitOrder(){
       body:JSON.stringify(payload)
     });
 
-    submitBtn.textContent='確認訂單中…';
-    const confirmed=await confirmOrderWritten(payload.requestId);
-    const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\n');
-    window.orderText=`【千容肉品訂單】
-訂單編號：${confirmed.orderNumber}
-商品
-${itemLines}
-應付總額：${money(Number(confirmed.totalAmount||0))}
-配送方式：${String(confirmed.shippingMethod||'').replace(/（.*?）/g,'').trim()}
-匯款後五碼：${payload.last5}`;
-
-    clearPendingOrderRequest(payload.requestId);
+    // 不再卡住使用者等待 Google Sheet 輪詢。
+    // 先進成功頁，訂單編號與後端驗算金額由背景確認完成後自動更新。
+    window.orderText='【千容肉品訂單】\n訂單資料已送出，系統正在建立訂單編號。';
+    document.getElementById('successOrderNumber').textContent='建立中…';
+    document.getElementById('sendOrderToLineBtn').href='https://lin.ee/rvNiERx';
     saveOrClearCustomerInfo();
-    document.getElementById('successOrderNumber').textContent=confirmed.orderNumber;
-    document.getElementById('sendOrderToLineBtn').href=createLineOrderUrl(window.orderText);
     goPage('pageSuccess');
+
+    confirmOrderInBackground(payload.requestId,payload,chosen);
   }catch(error){
     console.error(error);
-    alert('系統目前尚未確認訂單是否成功寫入。請保持訂購內容不變後再次按「送出訂單」，系統會使用同一識別碼避免重複建立訂單。');
+    alert('目前無法送出訂單，請確認網路連線後再試一次。');
   }finally{
     submitBtn.disabled=false;
     submitBtn.textContent=originalText;
@@ -1343,6 +1423,14 @@ async function copyOrder(){
   try{await navigator.clipboard.writeText(window.orderText);alert('訂單內容已複製，可貼到官方LINE。')}
   catch(e){prompt('請複製以下訂單內容：',window.orderText)}
 }
+
+const buyerNameInput=document.getElementById('buyerName');
+const receiverNameInput=document.getElementById('receiverName');
+const sameAsBuyerInput=document.getElementById('sameAsBuyer');
+sameAsBuyerInput?.addEventListener('change',syncReceiverWithBuyer);
+buyerNameInput?.addEventListener('input',()=>{
+  if(sameAsBuyerInput?.checked) syncReceiverWithBuyer();
+});
 
 const phoneInput=document.getElementById('phone');
 const last5Input=document.getElementById('last5');
