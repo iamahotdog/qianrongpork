@@ -721,7 +721,7 @@ body.modal-open{overflow:hidden}
     <section class="success-card">
       <div class="success-icon">✓</div>
       <h1>感謝您的訂購</h1>
-      <p>訂單資料已送出。<br>系統正在建立訂單編號，完成後會自動顯示，再將訂單內容傳送至千容肉品官方LINE。</p>
+      <p>訂單資料已送出。<br>訂單編號已建立。系統會在背景確認正式金額，完成後即可複製完整訂單內容並傳送至千容肉品官方LINE。</p>
       <div class="success-order-no">
         訂單編號
         <strong id="successOrderNumber">—</strong>
@@ -879,7 +879,7 @@ let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwt8FXcEe8A6aqBL2SPTZWDfOyqpLtll97M7MfEnA_VIwIdmTaKfLomotsOIYSW--9q/exec';
 const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
-const REQUIRED_BACKEND_VERSION = 'v41.2';
+const REQUIRED_BACKEND_VERSION = 'v41.8';
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -1251,6 +1251,27 @@ function createRequestId(){
   if(window.crypto?.randomUUID) return `QRREQ-${crypto.randomUUID()}`;
   return `QRREQ-${Date.now()}-${Math.random().toString(36).slice(2,12)}`;
 }
+function createClientOrderNumber(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const timestamp=
+    now.getFullYear()+
+    pad(now.getMonth()+1)+
+    pad(now.getDate())+
+    pad(now.getHours())+
+    pad(now.getMinutes())+
+    pad(now.getSeconds());
+
+  let suffix;
+  if(window.crypto?.getRandomValues){
+    const arr=new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    suffix=String(arr[0]%1000000).padStart(6,'0');
+  }else{
+    suffix=String(Math.floor(Math.random()*1000000)).padStart(6,'0');
+  }
+  return `QR${timestamp}${suffix}`;
+}
 function buildOrderFingerprint(payload){
   return JSON.stringify({
     buyerName:payload.buyerName,
@@ -1298,9 +1319,8 @@ function wait(ms){
 }
 
 async function confirmOrderInBackground(requestId,payload,chosen){
-  // Google Sheet / Apps Script 寫入完成時間偶爾比前端快轉成功頁慢一些。
-  // 背景重試不阻塞使用者，也不顯示技術性警告。
-  const retryDelays=[700,1200,2000,3500,5000];
+  // 訂單編號已在送單當下產生並顯示；背景確認只補正式總額與 LINE 內容。
+  const retryDelays=[800,1800,3500];
 
   for(let attempt=0; attempt<retryDelays.length; attempt++){
     try{
@@ -1316,7 +1336,7 @@ async function confirmOrderInBackground(requestId,payload,chosen){
         const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\n');
 
         window.orderText=`【千容肉品訂單】
-訂單編號：${confirmed.orderNumber}
+訂單編號：${confirmed.orderNumber || payload.orderNumber}
 商品
 ${itemLines}
 應付總額：${money(Number(confirmed.totalAmount||0))}
@@ -1325,32 +1345,31 @@ ${itemLines}
 
         clearPendingOrderRequest(requestId);
 
-        const orderNo=document.getElementById('successOrderNumber');
-        if(orderNo) orderNo.textContent=confirmed.orderNumber;
-
         const lineBtn=document.getElementById('sendOrderToLineBtn');
         if(lineBtn) lineBtn.href=createLineOrderUrl(window.orderText);
 
         const copyBtn=document.getElementById('copyOrderBtn');
-        if(copyBtn) copyBtn.disabled=false;
+        if(copyBtn){
+          copyBtn.disabled=false;
+          copyBtn.textContent='複製訂單內容';
+        }
 
         return true;
-      }
-
-      // pending 代表後臺尚未完成寫入，繼續下一次背景確認。
-      if(result?.status !== 'pending'){
-        console.warn('訂單背景確認回傳非 pending 狀態：',result);
       }
     }catch(error){
       console.warn(`背景確認訂單第 ${attempt+1} 次未完成：`,error);
     }
   }
 
-  // 背景確認逾時也不打擾客人；保留 LINE 聯繫入口。
-  const orderNo=document.getElementById('successOrderNumber');
-  if(orderNo && orderNo.textContent==='建立中…'){
-    orderNo.textContent='已送出';
+  // 不改掉正式訂單編號，也不顯示「已送出」等模糊文字。
+  const copyBtn=document.getElementById('copyOrderBtn');
+  if(copyBtn){
+    copyBtn.disabled=false;
+    copyBtn.textContent='複製訂單編號';
   }
+  window.orderText=`【千容肉品訂單】
+訂單編號：${payload.orderNumber}
+訂單資料已送出，正式金額請以千容肉品確認為準。`;
   return false;
 }
 
@@ -1423,6 +1442,8 @@ async function submitOrder(){
     const itemsDetailed=chosen.map(p=>({name:p.name,qty:p.qty}));
     const itemsText=chosen.map(p=>`${p.name} × ${p.qty}包`).join('、');
     const payload={
+      // 訂單編號由前端先產生，成功頁可立即顯示；後端仍會驗證唯一性。
+      orderNumber:createClientOrderNumber(),
       // V41：前端只告訴後端「誰買、買什麼、怎麼配送」。
       // 商品價格、商品小計、運費、總金額一律不傳，由 Apps Script 自行判定。
       buyerName:document.getElementById('buyerName').value.trim(),
@@ -1447,11 +1468,19 @@ async function submitOrder(){
 
     // 不再卡住使用者等待 Google Sheet 輪詢。
     // 先進成功頁；訂單編號與正式總額以 Apps Script 後端驗算結果為準，背景確認後自動更新。
-    window.orderText='【千容肉品訂單】\n訂單資料已送出，系統正在建立訂單編號。';
-    document.getElementById('successOrderNumber').textContent='建立中…';
+    window.orderText=`【千容肉品訂單】
+訂單編號：${payload.orderNumber}
+訂單資料已送出，系統正在確認正式金額。`;
+
+    document.getElementById('successOrderNumber').textContent=payload.orderNumber;
     document.getElementById('sendOrderToLineBtn').href='https://lin.ee/rvNiERx';
+
     const copyBtn=document.getElementById('copyOrderBtn');
-    if(copyBtn) copyBtn.disabled=true;
+    if(copyBtn){
+      copyBtn.disabled=true;
+      copyBtn.textContent='訂單確認中…';
+    }
+
     saveOrClearCustomerInfo();
     goPage('pageSuccess');
 
