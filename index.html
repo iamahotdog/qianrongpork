@@ -876,7 +876,7 @@ const LINE_OA_ID = '@011qisjt';
 const HOT_SALE_MIN_QTY = 5;
 let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
-const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzjcFE_MhK-6H8LjXmw6-ZWwVWPzLl1XTZuZiVxA3WdNAfkPDbnhNoom9pq5P5vI4me/exec';
+const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwt8FXcEe8A6aqBL2SPTZWDfOyqpLtll97M7MfEnA_VIwIdmTaKfLomotsOIYSW--9q/exec';
 const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV401';
 const REQUIRED_BACKEND_VERSION = 'v41';
 const products = [
@@ -1359,7 +1359,7 @@ async function submitOrder(){
     // 先確認 Apps Script 已部署為相容版本，避免新版前端誤送到舊版後端造成欄位錯置。
     const backendReady=await verifyBackendVersion();
     if(!backendReady){
-      alert('目前後端仍是舊版本，為避免訂單資料寫入錯誤，本次不會送出訂單。請先重新部署 Google Apps Script v40.1 後再試。');
+      alert('目前後端版本不符合 V41，為避免訂單資料寫入錯誤，本次不會送出訂單。請確認 Google Apps Script 已部署為 V41 後再試。');
       return;
     }
 
