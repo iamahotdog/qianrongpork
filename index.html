@@ -851,6 +851,9 @@ const HOT_SALE_MIN_QTY = 5;
 let hotSaleProducts = new Set();
 let infoReturnPage = 'pageIntro';
 const GOOGLE_SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx72QKjh_PQpb4FlywC5m0PkzmoC4UuERCe4Ja4nR0MbP_evSRKw_5SLnLLZHSxPT6F/exec';
+const PENDING_ORDER_STORAGE_KEY = 'qianrongPendingOrderV40';
+const ORDER_CONFIRM_MAX_ATTEMPTS = 8;
+const ORDER_CONFIRM_DELAY_MS = 650;
 const products = [
   {name:'老鼠肉', img:'assets/老鼠肉.png', brief:'後腿瘦肉・乾煎快炒'},
   {name:'里肌肉', img:'assets/里肌肉.png', brief:'低脂嫩口・香煎炸豬排'},
@@ -985,7 +988,82 @@ function handleGuideModalKeydown(event){
   if(event.key==='ArrowRight') changeGuideSlide(1);
 }
 
-function setQueryMessage(message,type='error'){const b=document.getElementById('queryMessage');b.textContent=message;b.className=`query-message show ${type}`;}function clearQueryMessage(){const b=document.getElementById('queryMessage');b.textContent='';b.className='query-message';}function fillOrderQueryResult(o){document.getElementById('resultOrderNumber').textContent=o.orderNumber||'—';document.getElementById('resultItems').textContent=o.items||'—';document.getElementById('resultTotal').textContent=money(Number(o.totalAmount||0));document.getElementById('resultShipping').textContent=(o.shippingMethod||'—').replace(/（.*?）/g,'').trim();document.getElementById('resultOrderStatus').textContent=o.orderStatus||'已收到訂單';document.getElementById('resultPaymentStatus').textContent=o.paymentStatus||'待確認';document.getElementById('resultShippingStatus').textContent=o.shippingStatus||'尚未出貨';document.getElementById('queryResult').classList.add('active');}function queryOrder(){const n=document.getElementById('queryOrderNumber').value.trim().toUpperCase(),l=document.getElementById('queryLast5').value.trim(),btn=document.getElementById('queryOrderBtn');clearQueryMessage();document.getElementById('queryResult').classList.remove('active');if(!/^QR\d{14}$/.test(n)){setQueryMessage('請輸入正確的訂單編號，例如QR20260803170201。');return}if(!/^\d{5}$/.test(l)){setQueryMessage('匯款帳號後五碼請輸入5碼數字。');return}const cb=`qianrongOrderQuery_${Date.now()}`,s=document.createElement('script');btn.disabled=true;btn.textContent='查詢中…';const clean=()=>{delete window[cb];s.remove();btn.disabled=false;btn.textContent='查詢訂單'};window[cb]=(d)=>{try{if(d?.success&&d?.order){fillOrderQueryResult(d.order);clearQueryMessage()}else setQueryMessage(d?.message||'查無符合資料。')}finally{clean()}};s.src=`${GOOGLE_SHEET_ENDPOINT}?action=queryOrder&orderNumber=${encodeURIComponent(n)}&last5=${encodeURIComponent(l)}&callback=${encodeURIComponent(cb)}&_=${Date.now()}`;s.onerror=()=>{setQueryMessage('目前無法連線至查詢系統，請稍後再試。');clean()};document.body.appendChild(s)}
+function setQueryMessage(message,type='error'){
+  const b=document.getElementById('queryMessage');
+  b.textContent=message;
+  b.className=`query-message show ${type}`;
+}
+function clearQueryMessage(){
+  const b=document.getElementById('queryMessage');
+  b.textContent='';
+  b.className='query-message';
+}
+function fillOrderQueryResult(o){
+  document.getElementById('resultOrderNumber').textContent=o.orderNumber||'—';
+  document.getElementById('resultItems').textContent=o.items||'—';
+  document.getElementById('resultTotal').textContent=money(Number(o.totalAmount||0));
+  document.getElementById('resultShipping').textContent=(o.shippingMethod||'—').replace(/（.*?）/g,'').trim();
+  document.getElementById('resultOrderStatus').textContent=o.orderStatus||'已收到訂單';
+  document.getElementById('resultPaymentStatus').textContent=o.paymentStatus||'待確認';
+  document.getElementById('resultShippingStatus').textContent=o.shippingStatus||'尚未出貨';
+  document.getElementById('queryResult').classList.add('active');
+}
+function jsonpRequest(params,timeoutMs=10000){
+  return new Promise((resolve,reject)=>{
+    const callbackName=`qianrongJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script=document.createElement('script');
+    let settled=false;
+    const timer=setTimeout(()=>finish(new Error('查詢逾時')),timeoutMs);
+    const cleanup=()=>{
+      clearTimeout(timer);
+      try{ delete window[callbackName]; }catch(_){ window[callbackName]=undefined; }
+      script.remove();
+    };
+    const finish=(error,data)=>{
+      if(settled) return;
+      settled=true;
+      cleanup();
+      if(error) reject(error); else resolve(data);
+    };
+    window[callbackName]=(data)=>finish(null,data);
+    const query=new URLSearchParams({...params,callback:callbackName,_:String(Date.now())});
+    script.src=`${GOOGLE_SHEET_ENDPOINT}?${query.toString()}`;
+    script.onerror=()=>finish(new Error('目前無法連線至訂單系統'));
+    document.body.appendChild(script);
+  });
+}
+async function queryOrder(){
+  const n=document.getElementById('queryOrderNumber').value.trim().toUpperCase();
+  const l=document.getElementById('queryLast5').value.trim();
+  const btn=document.getElementById('queryOrderBtn');
+  clearQueryMessage();
+  document.getElementById('queryResult').classList.remove('active');
+  if(!/^QR\d{14}(?:\d{3})?$/.test(n)){
+    setQueryMessage('請輸入正確的訂單編號，例如QR20260803170201。');
+    return;
+  }
+  if(!/^\d{5}$/.test(l)){
+    setQueryMessage('匯款帳號後五碼請輸入5碼數字。');
+    return;
+  }
+  btn.disabled=true;
+  btn.textContent='查詢中…';
+  try{
+    const d=await jsonpRequest({action:'queryOrder',orderNumber:n,last5:l});
+    if(d?.success&&d?.order){
+      fillOrderQueryResult(d.order);
+      clearQueryMessage();
+    }else{
+      setQueryMessage(d?.message||'查無符合資料。');
+    }
+  }catch(error){
+    console.error(error);
+    setQueryMessage('目前無法連線至查詢系統，請稍後再試。');
+  }finally{
+    btn.disabled=false;
+    btn.textContent='查詢訂單';
+  }
+}
 const CUSTOMER_INFO_STORAGE_KEY='qianrongCustomerInfoV1';
 
 function loadRememberedCustomerInfo(){
@@ -1114,6 +1192,56 @@ function updateCheckout(){
   document.getElementById('shippingAmount').textContent=ship===0?'免運':money(ship);
   document.getElementById('grandTotal').textContent=money(total);
 }
+function createRequestId(){
+  if(window.crypto?.randomUUID) return `QRREQ-${crypto.randomUUID()}`;
+  return `QRREQ-${Date.now()}-${Math.random().toString(36).slice(2,12)}`;
+}
+function buildOrderFingerprint(payload){
+  return JSON.stringify({
+    buyerName:payload.buyerName,
+    phone:payload.phone,
+    shippingCode:payload.shippingCode,
+    receiverName:payload.receiverName,
+    address:payload.address,
+    items:payload.items,
+    last5:payload.last5,
+    note:payload.note
+  });
+}
+function getOrCreateRequestId(payload){
+  const fingerprint=buildOrderFingerprint(payload);
+  try{
+    const saved=JSON.parse(sessionStorage.getItem(PENDING_ORDER_STORAGE_KEY)||'null');
+    if(saved?.requestId && saved?.fingerprint===fingerprint){
+      return saved.requestId;
+    }
+  }catch(_){ }
+  const requestId=createRequestId();
+  try{
+    sessionStorage.setItem(PENDING_ORDER_STORAGE_KEY,JSON.stringify({requestId,fingerprint,createdAt:Date.now()}));
+  }catch(_){ }
+  return requestId;
+}
+function clearPendingOrderRequest(requestId){
+  try{
+    const saved=JSON.parse(sessionStorage.getItem(PENDING_ORDER_STORAGE_KEY)||'null');
+    if(!saved || saved.requestId===requestId) sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY);
+  }catch(_){ }
+}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function confirmOrderWritten(requestId){
+  for(let attempt=1;attempt<=ORDER_CONFIRM_MAX_ATTEMPTS;attempt++){
+    try{
+      const result=await jsonpRequest({action:'confirmOrder',requestId},7000);
+      if(result?.success && result?.order) return result.order;
+      if(result?.status && result.status!=='pending') throw new Error(result.message||'訂單確認失敗');
+    }catch(error){
+      if(attempt===ORDER_CONFIRM_MAX_ATTEMPTS) throw error;
+    }
+    await sleep(ORDER_CONFIRM_DELAY_MS*attempt);
+  }
+  throw new Error('訂單尚未完成確認');
+}
 async function submitOrder(){
   const required=[
     ['buyerName','請填寫訂購人姓名'],
@@ -1160,33 +1288,24 @@ async function submitOrder(){
     return;
   }
 
-  const goods=goodsTotal();
-  const ship=shippingFee();
-  const total=goods+ship;
-  const orderNumber=createOrderNumber();
-  const shipText=document.getElementById('shipping').selectedOptions[0].text;
-  const itemsText=chosen.map(p=>`${p.name} × ${p.qty}包`).join('、');
-
+  const shipping=document.getElementById('shipping');
+  const shippingCodes=['blackcat','seven_eleven','taipei_meetup'];
   const payload={
-    orderNumber:orderNumber,
     buyerName:document.getElementById('buyerName').value.trim(),
     phone:phone.value.trim(),
-    shippingMethod:shipText,
+    shippingCode:shippingCodes[shipping.selectedIndex]||'blackcat',
     receiverName:document.getElementById('receiverName').value.trim(),
     address:document.getElementById('address').value.trim(),
-    items:itemsText,
-    totalQty:countTotal(),
-    goodsAmount:goods,
-    shippingFee:ship,
-    totalAmount:total,
+    items:chosen.map(p=>({name:p.name,qty:p.qty})),
     last5:last5.value.trim(),
     note:document.getElementById('note').value.trim()
   };
+  payload.requestId=getOrCreateRequestId(payload);
 
   const submitBtn=document.getElementById('submitOrderBtn');
   const originalText=submitBtn.textContent;
   submitBtn.disabled=true;
-  submitBtn.textContent='訂單送出中…';
+  submitBtn.textContent='訂單寫入中…';
 
   try{
     await fetch(GOOGLE_SHEET_ENDPOINT,{
@@ -1196,22 +1315,25 @@ async function submitOrder(){
       body:JSON.stringify(payload)
     });
 
+    submitBtn.textContent='確認訂單中…';
+    const confirmed=await confirmOrderWritten(payload.requestId);
     const itemLines=chosen.map(p=>`・${p.name} ×${p.qty}`).join('\n');
     window.orderText=`【千容肉品訂單】
-訂單編號：${orderNumber}
+訂單編號：${confirmed.orderNumber}
 商品
 ${itemLines}
-應付總額：${money(total)}
-配送方式：${payload.shippingMethod.replace(/（.*?）/g,'').trim()}
+應付總額：${money(Number(confirmed.totalAmount||0))}
+配送方式：${String(confirmed.shippingMethod||'').replace(/（.*?）/g,'').trim()}
 匯款後五碼：${payload.last5}`;
 
+    clearPendingOrderRequest(payload.requestId);
     saveOrClearCustomerInfo();
-    document.getElementById('successOrderNumber').textContent=orderNumber;
+    document.getElementById('successOrderNumber').textContent=confirmed.orderNumber;
     document.getElementById('sendOrderToLineBtn').href=createLineOrderUrl(window.orderText);
     goPage('pageSuccess');
   }catch(error){
     console.error(error);
-    alert('訂單送出失敗，請確認網路連線後再試一次。');
+    alert('系統目前尚未確認訂單是否成功寫入。請保持訂購內容不變後再次按「送出訂單」，系統會使用同一識別碼避免重複建立訂單。');
   }finally{
     submitBtn.disabled=false;
     submitBtn.textContent=originalText;
