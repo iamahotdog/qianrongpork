@@ -645,6 +645,59 @@ body.modal-open{overflow:hidden}
   .qty-input{height:26px;line-height:26px;font-size:16px}
 }
 
+/* ===== v4-fun：小趣味（純顯示，不動任何訂單資料） ===== */
+/* 5. 步驟小圓點（放在頂部 logo 列） */
+.fun-steps{display:none;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.fun-steps.show{display:flex}
+.fun-step{display:flex;align-items:center;gap:4px;opacity:.55;transition:opacity .2s}
+.fun-step i{width:8px;height:8px;border-radius:50%;background:#d8cdbd;display:block;transition:background .2s,transform .2s}
+.fun-step.fun-done{opacity:.8}
+.fun-step.fun-done i{background:#c5c69c}
+.fun-step.fun-current{opacity:1;color:var(--brown)}
+.fun-step.fun-current i{background:var(--olive);transform:scale(1.25);box-shadow:0 0 0 3px rgba(143,144,96,.18)}
+.fun-step-arrow{color:#cdbfae;font-size:11px}
+.site-nav-inner{gap:10px}
+@media(max-width:760px){.fun-steps{font-size:11px;gap:4px}.fun-step i{width:7px;height:7px}}
+@media(max-width:360px){.fun-step-arrow{display:none}}
+
+/* 1. 按＋跳出小豬、底部金額彈一下 */
+.fun-pop{position:fixed;z-index:200;pointer-events:none;font-size:18px;line-height:1;transform:translate(-50%,-50%);animation:funPop .7s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes funPop{0%{opacity:0;transform:translate(-50%,-30%) scale(.4)}25%{opacity:1;transform:translate(-50%,-110%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-260%) scale(.9)}}
+.fun-bump{display:inline-block;animation:funBump .38s ease}
+@keyframes funBump{0%{transform:translateY(0)}35%{transform:translateY(-5px) scale(1.06)}100%{transform:translateY(0)}}
+
+/* 2. 免運細線 */
+.fun-ship{max-width:980px;margin:0 auto 8px;display:flex;align-items:center;gap:10px}
+.fun-ship-track{flex:1;height:3px;border-radius:999px;background:#ece3d6;overflow:hidden}
+.fun-ship-fill{display:block;height:100%;width:0;border-radius:inherit;background:var(--olive);transition:width .45s cubic-bezier(.2,.8,.3,1)}
+.fun-ship-text{flex:0 0 auto;font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap}
+.fun-ship.reached .fun-ship-text{color:var(--olive)}
+@media(min-width:1100px){.fun-ship{max-width:1180px}}
+
+/* 3. 訂單明細收據風 */
+.order-card{border:0;border-radius:0;padding-top:26px;padding-bottom:30px;
+  -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x;
+          mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x}
+.order-card h2{text-align:center;letter-spacing:.12em;padding-bottom:10px;border-bottom:1.5px dashed #d9cbb8}
+.order-card .line-item{border-bottom:1px dashed #e3d6c4}
+.order-card .item-price,.order-card .price-row strong,.order-card .item-main small{font-variant-numeric:tabular-nums;font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono","DejaVu Sans Mono","Noto Sans TC",monospace;letter-spacing:.02em}
+.order-card .price-block{background:transparent;border-top:1.5px dashed #d9cbb8;border-radius:0;padding:10px 2px 0}
+.order-card .price-row.total{border-top:0;padding-top:10px;position:relative}
+.order-card .price-row.total::before{content:"";position:absolute;left:0;right:0;top:0;border-top:3px double #d9cbb8}
+
+/* 4. 成功頁：印章＋小豬彩帶 */
+.success-card{position:relative;overflow:hidden}
+.fun-stamp{position:absolute;top:16px;right:14px;padding:4px 10px;border:2px solid var(--olive);border-radius:10px;color:var(--olive);font-size:13px;font-weight:900;letter-spacing:.12em;transform:rotate(-12deg);background:rgba(255,255,255,.6);pointer-events:none;animation:funStamp .55s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes funStamp{0%{opacity:0;transform:rotate(-12deg) scale(2.2)}70%{opacity:1;transform:rotate(-12deg) scale(.92)}100%{opacity:1;transform:rotate(-12deg) scale(1)}}
+.fun-confetti{position:fixed;z-index:200;top:-24px;pointer-events:none;font-size:16px;animation:funFall linear forwards}
+@keyframes funFall{0%{opacity:0;transform:translate(0,0) rotate(0)}10%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot))}}
+
+@media(prefers-reduced-motion:reduce){
+  .fun-pop,.fun-confetti{display:none}
+  .fun-bump,.fun-stamp{animation:none}
+  .fun-ship-fill,.fun-step,.fun-step i{transition:none}
+}
+
 </style>
 </head>
 <body>
@@ -1778,6 +1831,112 @@ renderProducts();
 loadProductCatalog();
 loadHotSaleRanking();
 if(new URLSearchParams(window.location.search).get('page')==='order-query'){goPage('pageOrderQuery');}
+</script>
+<script>
+// v4-fun：小趣味。只「讀」現有畫面與購物車狀態來做動畫，
+// 不改任何訂單資料、欄位、配送選項、驗證或送出內容。
+(function(){
+  const reduceMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FREE_SHIPPING_DISPLAY_THRESHOLD=3000; // 與 shippingFee() 的免運門檻相同，僅顯示用
+
+  // 5. 步驟小圓點：觀察現有 .page 的 active 狀態
+  const navInner=document.querySelector('.site-nav-inner');
+  const steps=document.createElement('div');
+  steps.className='fun-steps'; steps.setAttribute('aria-hidden','true');
+  steps.innerHTML=['選肉','填資料','匯款'].map((t,i)=>`${i?'<span class="fun-step-arrow">→</span>':''}<span class="fun-step" data-step="${i}"><i></i>${t}</span>`).join('');
+  navInner?.insertBefore(steps,navInner.querySelector('.site-note'));
+  const stepOf={pageShop:0,pageCheckout:1,pageSuccess:2};
+  function syncSteps(){
+    const id=document.querySelector('.page.active')?.id;
+    const cur=stepOf[id];
+    steps.classList.toggle('show',cur!==undefined);
+    steps.querySelectorAll('.fun-step').forEach((s,i)=>{s.classList.toggle('fun-current',i===cur);s.classList.toggle('fun-done',cur!==undefined&&i<cur);});
+  }
+
+  // 2. 免運細線：放進底部購物列
+  const summary=document.querySelector('#pageShop .shop-summary');
+  const ship=document.createElement('div');
+  ship.className='fun-ship';
+  ship.innerHTML='<span class="fun-ship-track" aria-hidden="true"><span class="fun-ship-fill"></span></span><span class="fun-ship-text"></span>';
+  summary?.insertBefore(ship,summary.firstChild);
+  function syncShip(){
+    if(typeof goodsTotal!=='function') return;
+    const goods=goodsTotal();
+    const gap=FREE_SHIPPING_DISPLAY_THRESHOLD-goods;
+    ship.classList.toggle('reached',gap<=0);
+    ship.querySelector('.fun-ship-fill').style.width=`${Math.min(100,goods/FREE_SHIPPING_DISPLAY_THRESHOLD*100)}%`;
+    ship.querySelector('.fun-ship-text').textContent=goods===0
+      ? `宅配滿 ${money(FREE_SHIPPING_DISPLAY_THRESHOLD)} 免運`
+      : gap>0 ? `再 ${money(gap)} 就免運` : '免運達成🐷';
+  }
+
+  // 1. 按＋：小豬跳出來、底部金額彈一下
+  const goodsText=document.getElementById('goodsText');
+  let lastCount=typeof countTotal==='function'?countTotal():0;
+  document.getElementById('products')?.addEventListener('click',event=>{
+    const btn=event.target.closest('button[aria-label^="增加"]');
+    if(!btn) return;
+    const r=btn.getBoundingClientRect(); // capture 階段：原本的 onclick 重繪前先記位置
+    const before=countTotal();
+    setTimeout(()=>{
+      if(countTotal()<=before || reduceMotion()) return; // 被上限擋下就不跳
+      const pig=document.createElement('span');
+      pig.className='fun-pop'; pig.textContent='🐷'; pig.setAttribute('aria-hidden','true');
+      pig.style.left=`${r.left+r.width/2}px`; pig.style.top=`${r.top}px`;
+      document.body.appendChild(pig);
+      pig.addEventListener('animationend',()=>pig.remove());
+      setTimeout(()=>pig.remove(),1200);
+    },0);
+  },true);
+  function bump(){
+    if(!goodsText || reduceMotion()) return;
+    goodsText.classList.remove('fun-bump'); void goodsText.offsetWidth; goodsText.classList.add('fun-bump');
+  }
+  if(goodsText) new MutationObserver(()=>{
+    syncShip();
+    const c=countTotal();
+    if(c>lastCount) bump();
+    lastCount=c;
+  }).observe(goodsText,{childList:true,characterData:true,subtree:true});
+
+  // 4. 成功頁：印章＋小豬彩帶（每次進入成功頁一次）
+  const successCard=document.querySelector('#pageSuccess .success-card');
+  let wasSuccess=false;
+  function celebrate(){
+    if(!successCard) return;
+    successCard.querySelector('.fun-stamp')?.remove();
+    const stamp=document.createElement('div');
+    stamp.className='fun-stamp'; stamp.textContent='訂單已收到'; stamp.setAttribute('aria-hidden','true');
+    successCard.appendChild(stamp);
+    if(reduceMotion()) return;
+    const icons=['🐷','✨','🐽','🌿'];
+    for(let i=0;i<16;i++){
+      const c=document.createElement('span');
+      c.className='fun-confetti'; c.setAttribute('aria-hidden','true');
+      c.textContent=icons[i%icons.length];
+      c.style.left=`${8+Math.round((i*37)%84)}vw`;
+      c.style.setProperty('--dx',`${(i%2?1:-1)*(10+(i*13)%40)}px`);
+      c.style.setProperty('--dy',`${55+(i*7)%30}vh`);
+      c.style.setProperty('--rot',`${(i%2?1:-1)*(90+(i*29)%180)}deg`);
+      c.style.animationDuration=`${1.1+(i%5)*0.12}s`;
+      c.style.animationDelay=`${(i%6)*0.05}s`;
+      document.body.appendChild(c);
+      c.addEventListener('animationend',()=>c.remove());
+      setTimeout(()=>c.remove(),2500);
+    }
+  }
+
+  function onPageChange(){
+    syncSteps();
+    const isSuccess=document.getElementById('pageSuccess')?.classList.contains('active');
+    if(isSuccess && !wasSuccess) celebrate();
+    wasSuccess=Boolean(isSuccess);
+  }
+  const pageObserver=new MutationObserver(onPageChange);
+  document.querySelectorAll('.page').forEach(p=>pageObserver.observe(p,{attributes:true,attributeFilter:['class']}));
+  onPageChange();
+  syncShip();
+})();
 </script>
 
 <footer class="site-footer">
