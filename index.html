@@ -645,21 +645,7 @@ body.modal-open{overflow:hidden}
   .qty-input{height:26px;line-height:26px;font-size:16px}
 }
 
-/* ===== v4-fun：小趣味（純顯示，不動任何訂單資料） ===== */
-/* 5. 步驟小圓點（放在頂部 logo 列） */
-.fun-steps{display:none;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
-.fun-steps.show{display:flex}
-.fun-step{display:flex;align-items:center;gap:4px;opacity:.55;transition:opacity .2s}
-.fun-step i{width:8px;height:8px;border-radius:50%;background:#d8cdbd;display:block;transition:background .2s,transform .2s}
-.fun-step.fun-done{opacity:.8}
-.fun-step.fun-done i{background:#c5c69c}
-.fun-step.fun-current{opacity:1;color:var(--brown)}
-.fun-step.fun-current i{background:var(--olive);transform:scale(1.25);box-shadow:0 0 0 3px rgba(143,144,96,.18)}
-.fun-step-arrow{color:#cdbfae;font-size:11px}
-.site-nav-inner{gap:10px}
-@media(max-width:760px){.fun-steps{font-size:11px;gap:4px}.fun-step i{width:7px;height:7px}}
-@media(max-width:360px){.fun-step-arrow{display:none}}
-
+/* ===== v5：小趣味（純顯示，不動任何訂單資料） ===== */
 /* 1. 按＋跳出小豬、底部金額彈一下 */
 .fun-pop{position:fixed;z-index:200;pointer-events:none;font-size:18px;line-height:1;transform:translate(-50%,-50%);animation:funPop .7s cubic-bezier(.2,.8,.3,1) forwards}
 @keyframes funPop{0%{opacity:0;transform:translate(-50%,-30%) scale(.4)}25%{opacity:1;transform:translate(-50%,-110%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-260%) scale(.9)}}
@@ -674,17 +660,6 @@ body.modal-open{overflow:hidden}
 .fun-ship.reached .fun-ship-text{color:var(--olive)}
 @media(min-width:1100px){.fun-ship{max-width:1180px}}
 
-/* 3. 訂單明細收據風 */
-.order-card{border:0;border-radius:0;padding-top:26px;padding-bottom:30px;
-  -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x;
-          mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/14px 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 51% repeat-x}
-.order-card h2{text-align:center;letter-spacing:.12em;padding-bottom:10px;border-bottom:1.5px dashed #d9cbb8}
-.order-card .line-item{border-bottom:1px dashed #e3d6c4}
-.order-card .item-price,.order-card .price-row strong,.order-card .item-main small{font-variant-numeric:tabular-nums;font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono","DejaVu Sans Mono","Noto Sans TC",monospace;letter-spacing:.02em}
-.order-card .price-block{background:transparent;border-top:1.5px dashed #d9cbb8;border-radius:0;padding:10px 2px 0}
-.order-card .price-row.total{border-top:0;padding-top:10px;position:relative}
-.order-card .price-row.total::before{content:"";position:absolute;left:0;right:0;top:0;border-top:3px double #d9cbb8}
-
 /* 4. 成功頁：印章＋小豬彩帶 */
 .success-card{position:relative;overflow:hidden}
 .fun-stamp{position:absolute;top:16px;right:14px;padding:4px 10px;border:2px solid var(--olive);border-radius:10px;color:var(--olive);font-size:13px;font-weight:900;letter-spacing:.12em;transform:rotate(-12deg);background:rgba(255,255,255,.6);pointer-events:none;animation:funStamp .55s cubic-bezier(.2,1.4,.4,1) both}
@@ -695,8 +670,29 @@ body.modal-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .fun-pop,.fun-confetti{display:none}
   .fun-bump,.fun-stamp{animation:none}
-  .fun-ship-fill,.fun-step,.fun-step i{transition:none}
+  .fun-ship-fill{transition:none}
 }
+
+/* ===== v5/v6 微調 ===== */
+/* 商品明細：隱藏縮圖，列表變短 */
+#itemList .line-item img{display:none}
+#itemList{gap:0}
+#itemList .line-item{grid-template-columns:1fr auto;padding:8px 0}
+/* 應付總額金額：維持原本深棕色，只加粗 */
+#grandTotal{font-weight:900}
+/* 同意條款：連結改成一般行內文字，結尾「。」不再單獨掉到下一行 */
+.terms-option .info-link{display:inline}
+/* v6：選購頁拿掉「返回首頁」，改點左上 logo（原本就是 goPage('pageIntro')） */
+.site-logo-link{cursor:pointer}
+/* v6：小計卡上下留白縮小 */
+.price-block{padding:8px 14px}
+.price-block .price-row:first-child{margin-top:4px}
+.price-block .price-row.total{margin-bottom:4px;padding-top:8px}
+/* v7：配送方式下方的提示，依選到的配送方式切換 */
+.ship-hint-wrap{margin-top:6px}
+.ship-fee-hint{font-size:12px;color:var(--muted);line-height:1.5}
+.ship-meetup-hint{font-size:12px;color:#5a5b32;line-height:1.5}
+.ship-hint-wrap [hidden]{display:none}
 
 </style>
 </head>
@@ -732,7 +728,7 @@ body.modal-open{overflow:hidden}
 <section id="pageShop" class="page">
   <div class="topbar">
     <div class="topbar-inner">
-      <button class="secondary" onclick="goPage('pageIntro')">返回首頁</button>
+      <span></span>
       <h1>挑選喜歡的豬肉</h1>
       <span></span>
     </div>
@@ -776,9 +772,6 @@ body.modal-open{overflow:hidden}
           <div class="price-row"><span>配送費</span><strong id="shippingAmount">$290</strong></div>
           <div class="price-row total"><span>應付總額</span><strong id="grandTotal">$290</strong></div>
         </div>
-        <div class="shipping-note">
-          冷凍宅配每箱290元；商品滿3,000元免運。選擇臺北面交者，請私訊官方LINE聯繫可面交時程。
-        </div>
 
         <div class="payment-box">
           <h3>匯款資訊</h3>
@@ -801,12 +794,16 @@ body.modal-open{overflow:hidden}
         <div class="fields">
           <div class="field"><label>訂購人姓名 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="buyerName" maxlength="30" required autocomplete="name" placeholder="請輸入姓名"></div>
           <div class="field"><label>聯絡電話 <span aria-hidden="true" style="color:#c94836">*</span></label><input id="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" pattern="09[0-9]{8}" required placeholder="09xx-xxx-xxx"></div>
-          <div class="field full"><label>配送方式</label>
+          <div class="field full"><label for="shipping">配送方式</label>
             <select id="shipping" onchange="updateCheckout()">
               <option value="290">黑貓冷凍宅急便（290元）</option>
               <option value="290">7-11冷凍宅配（290元）</option>
               <option value="0">臺北市面交（免運）</option>
             </select>
+            <div class="ship-hint-wrap" aria-live="polite">
+              <div id="shipFeeHint" class="ship-fee-hint">冷凍宅配每箱290元；商品滿3,000元免運。</div>
+              <div id="shipMeetupHint" class="ship-meetup-hint" hidden>選擇臺北面交者，請私訊官方LINE聯繫可面交時程。</div>
+            </div>
           </div>
           <div class="same-buyer-row">
             <label class="same-buyer-option" for="sameAsBuyer">
@@ -1839,19 +1836,19 @@ if(new URLSearchParams(window.location.search).get('page')==='order-query'){goPa
   const reduceMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const FREE_SHIPPING_DISPLAY_THRESHOLD=3000; // 與 shippingFee() 的免運門檻相同，僅顯示用
 
-  // 5. 步驟小圓點：觀察現有 .page 的 active 狀態
-  const navInner=document.querySelector('.site-nav-inner');
-  const steps=document.createElement('div');
-  steps.className='fun-steps'; steps.setAttribute('aria-hidden','true');
-  steps.innerHTML=['選肉','填資料','匯款'].map((t,i)=>`${i?'<span class="fun-step-arrow">→</span>':''}<span class="fun-step" data-step="${i}"><i></i>${t}</span>`).join('');
-  navInner?.insertBefore(steps,navInner.querySelector('.site-note'));
-  const stepOf={pageShop:0,pageCheckout:1,pageSuccess:2};
-  function syncSteps(){
-    const id=document.querySelector('.page.active')?.id;
-    const cur=stepOf[id];
-    steps.classList.toggle('show',cur!==undefined);
-    steps.querySelectorAll('.fun-step').forEach((s,i)=>{s.classList.toggle('fun-current',i===cur);s.classList.toggle('fun-done',cur!==undefined&&i<cur);});
+  // v7：配送方式提示。只讀取目前選到的配送方式來切換提示，不改 select 或任何表單資料
+  const shippingSelect=document.getElementById('shipping');
+  const feeHint=document.getElementById('shipFeeHint');
+  const meetupHint=document.getElementById('shipMeetupHint');
+  function syncShipHint(){
+    if(!shippingSelect || !feeHint || !meetupHint) return;
+    const text=shippingSelect.selectedOptions[0]?.text || '';
+    const isMeetup=text.includes('面交');
+    meetupHint.hidden=!isMeetup;
+    feeHint.hidden=isMeetup;
   }
+  shippingSelect?.addEventListener('change',syncShipHint);
+  shippingSelect?.addEventListener('input',syncShipHint);
 
   // 2. 免運細線：放進底部購物列
   const summary=document.querySelector('#pageShop .shop-summary');
@@ -1927,7 +1924,7 @@ if(new URLSearchParams(window.location.search).get('page')==='order-query'){goPa
   }
 
   function onPageChange(){
-    syncSteps();
+    syncShipHint();
     const isSuccess=document.getElementById('pageSuccess')?.classList.contains('active');
     if(isSuccess && !wasSuccess) celebrate();
     wasSuccess=Boolean(isSuccess);
@@ -1936,6 +1933,7 @@ if(new URLSearchParams(window.location.search).get('page')==='order-query'){goPa
   document.querySelectorAll('.page').forEach(p=>pageObserver.observe(p,{attributes:true,attributeFilter:['class']}));
   onPageChange();
   syncShip();
+  syncShipHint();
 })();
 </script>
 
